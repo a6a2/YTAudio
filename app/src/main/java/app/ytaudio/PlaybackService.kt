@@ -2,6 +2,7 @@ package app.ytaudio
 
 import android.content.Intent
 import android.content.pm.ServiceInfo
+import android.util.Log
 import android.widget.Toast
 import androidx.annotation.StringRes
 import androidx.core.app.NotificationChannelCompat
@@ -27,6 +28,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.schabi.newpipe.extractor.exceptions.ContentNotAvailableException
 import org.schabi.newpipe.extractor.exceptions.ExtractionException
 import java.io.IOException
 
@@ -103,17 +105,26 @@ class PlaybackService : MediaSessionService() {
             } catch (e: CancellationException) {
                 throw e
             } catch (e: IOException) {
-                fail(R.string.err_network)
+                Log.e(TAG, "network", e)
+                fail(R.string.err_network, e)
+            } catch (e: ContentNotAvailableException) {
+                Log.e(TAG, "unavailable", e)
+                fail(R.string.err_unavailable, e)
             } catch (e: ExtractionException) {
-                fail(R.string.err_unavailable)
+                // Extractor/YouTube mismatch, not a problem with the video itself.
+                Log.e(TAG, "extraction", e)
+                fail(R.string.err_extract, e)
             } catch (e: Exception) {
-                fail(R.string.err_generic)
+                Log.e(TAG, "generic", e)
+                fail(R.string.err_generic, e)
             }
         }
     }
 
-    private fun fail(@StringRes msg: Int) {
-        Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
+    private fun fail(@StringRes msg: Int, cause: Throwable? = null) {
+        // Short technical detail appended so errors are diagnosable without logcat.
+        val detail = cause?.let { "\n(${it.javaClass.simpleName}: ${it.message?.take(70)})" }.orEmpty()
+        Toast.makeText(this, getString(msg) + detail, Toast.LENGTH_LONG).show()
         quit()
     }
 
@@ -134,6 +145,7 @@ class PlaybackService : MediaSessionService() {
     companion object {
         const val ACTION_PLAY = "app.ytaudio.PLAY"
         const val EXTRA_URL = "url"
+        private const val TAG = "YTAudio"
         private const val CHANNEL = "playback"
         private const val NOTIFICATION_ID = 1001
     }

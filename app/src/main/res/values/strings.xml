@@ -6,4 +6,5 @@
     <string name="err_network">Network error. Check your connection.</string>
     <string name="err_unavailable">This video can’t be played (private, region-locked, age-restricted or removed).</string>
     <string name="err_generic">Couldn’t play this video.</string>
+    <string name="err_extract">Couldn’t read this video from YouTube. The app may need an update.</string>
 </resources>

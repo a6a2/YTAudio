@@ -15,7 +15,7 @@ It appears only in the Share sheet (and as a media notification while playing).
 
 ## Build
 Push to GitHub: the included workflow builds the APK. Locally: `gradle assembleRelease` (JDK 17, Android SDK 35).
-If YouTube changes break playback, bump the `NewPipeExtractor` version in `app/build.gradle.kts`.
+If YouTube changes break playback, bump the `NewPipeExtractor` version (currently v0.26.5) in `app/build.gradle.kts`.
 
 ## Notes
 Personal use only; not affiliated with YouTube/Google. Using YouTube outside its official apps may conflict with its Terms of Service.

@@ -6,4 +6,5 @@
     <string name="err_network">خطأ في الشبكة. تحقق من اتصالك.</string>
     <string name="err_unavailable">لا يمكن تشغيل هذا الفيديو (خاص أو محظور في منطقتك أو مقيّد بالعمر أو محذوف).</string>
     <string name="err_generic">تعذّر تشغيل هذا الفيديو.</string>
+    <string name="err_extract">تعذّر قراءة الفيديو من يوتيوب. قد يحتاج التطبيق إلى تحديث.</string>
 </resources>
