@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">YT Audio</string>
+    <string name="channel">تشغيل الصوت</string>
+    <string name="loading">جارٍ تحميل الصوت…</string>
+    <string name="err_not_youtube">ليس رابط يوتيوب</string>
+    <string name="err_network">خطأ في الشبكة. تحقق من اتصالك.</string>
+    <string name="err_unavailable">لا يمكن تشغيل هذا الفيديو (خاص أو محظور في منطقتك أو مقيّد بالعمر أو محذوف).</string>
+    <string name="err_generic">تعذّر تشغيل هذا الفيديو.</string>
+</resources>

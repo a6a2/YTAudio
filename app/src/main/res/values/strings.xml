@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">YT Audio</string>
+    <string name="channel">Audio playback</string>
+    <string name="loading">Loading audio…</string>
+    <string name="err_not_youtube">Not a YouTube link</string>
+    <string name="err_network">Network error. Check your connection.</string>
+    <string name="err_unavailable">This video can’t be played (private, region-locked, age-restricted or removed).</string>
+    <string name="err_generic">Couldn’t play this video.</string>
+</resources>
