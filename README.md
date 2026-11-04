@@ -1,4 +1,4 @@
-# YT Audio 2.0
+# YT Audio 2.0.1
 
 One job: **YouTube → Share → YT Audio → audio plays in the background.** No UI, no player, no library.
 It appears only in the Share sheet (and as a media notification while playing).
@@ -6,7 +6,7 @@ It appears only in the Share sheet (and as a media notification while playing).
 - Accepts video, Shorts, Live, Music, `youtu.be` and **playlist** links (extra text in the share is ignored)
 - Playlist link → plays the whole playlist; video inside a playlist → plays the playlist from that video
 - Single video → after it ends, a recommended video plays automatically (3 s gap)
-- Notification buttons: previous / play-pause / next, repeat (off → all → one), close
+- Compact controls (lock screen / collapsed shade): Repeat (off → all → one) · Play/Pause · ✕ Close. Previous and Next appear when the control is expanded (and on headset buttons)
 - Plays best available audio via [NewPipeExtractor](https://github.com/TeamNewPipe/NewPipeExtractor) + Media3/ExoPlayer
 - Screen-off playback, lock-screen/notification controls, Bluetooth/headphone buttons, pauses on unplug
 - ✕ Close button in the notification stops playback and removes it; paused for 10 min also auto-closes
@@ -20,6 +20,11 @@ It appears only in the Share sheet (and as a media notification while playing).
 ## Build
 Push to GitHub: the included workflow builds the APK. Locally: `gradle assembleRelease` (JDK 17, Android SDK 35).
 If YouTube changes break playback, bump the `NewPipeExtractor` version (currently v0.26.5) in `app/build.gradle.kts`.
+
+## Updating
+Every build is signed with the same key (`app/ytaudio.keystore`), so new APKs install over old ones.
+If an older build was signed differently, uninstall it once first. Check the installed version in
+Settings → Apps → YT Audio (the app has no launcher icon).
 
 ## Notes
 Personal use only; not affiliated with YouTube/Google. Using YouTube outside its official apps may conflict with its Terms of Service.

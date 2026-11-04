@@ -73,12 +73,6 @@ class PlaybackService : MediaSessionService() {
 
     private val cmdClose = SessionCommand(ACTION_CLOSE, Bundle.EMPTY)
     private val cmdRepeat = SessionCommand(ACTION_REPEAT, Bundle.EMPTY)
-    private val closeButton by lazy {
-        CommandButton.Builder(CommandButton.ICON_UNDEFINED)
-            .setDisplayName(getString(R.string.close))
-            .setCustomIconResId(R.drawable.ic_close)
-            .setSessionCommand(cmdClose).build()
-    }
 
     override fun onCreate() {
         super.onCreate()
@@ -148,7 +142,7 @@ class PlaybackService : MediaSessionService() {
                     return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
                 }
             })
-            .setCustomLayout(layout())
+            .setMediaButtonPreferences(layout())
             .build()
     }
 
@@ -337,9 +331,13 @@ class PlaybackService : MediaSessionService() {
         repeat = Repeat.values()[(repeat.ordinal + 1) % 3]   // off -> all -> one -> off
         applyRepeat()
         getSharedPreferences("s", MODE_PRIVATE).edit().putInt("repeat", repeat.ordinal).apply()
-        session?.setCustomLayout(layout())
+        session?.setMediaButtonPreferences(layout())
     }
 
+    /**
+     * Android shows 3 slots in compact controls (lock screen, collapsed shade): play/pause + BACK + FORWARD.
+     * We put Repeat and Close there; Previous and Next go to the two overflow slots (expanded view).
+     */
     private fun layout(): List<CommandButton> {
         val (icon, label) = when (repeat) {
             Repeat.OFF -> R.drawable.ic_repeat_off to R.string.repeat_off
@@ -348,8 +346,19 @@ class PlaybackService : MediaSessionService() {
         }
         val repeatButton = CommandButton.Builder(CommandButton.ICON_UNDEFINED)
             .setDisplayName(getString(label)).setCustomIconResId(icon)
-            .setSessionCommand(cmdRepeat).build()
-        return listOf(repeatButton, closeButton)
+            .setSessionCommand(cmdRepeat).setSlots(CommandButton.SLOT_BACK).build()
+        val closeButton = CommandButton.Builder(CommandButton.ICON_UNDEFINED)
+            .setDisplayName(getString(R.string.close)).setCustomIconResId(R.drawable.ic_close)
+            .setSessionCommand(cmdClose).setSlots(CommandButton.SLOT_FORWARD).build()
+        val previousButton = CommandButton.Builder(CommandButton.ICON_PREVIOUS)
+            .setDisplayName(getString(R.string.previous))
+            .setPlayerCommand(Player.COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM)
+            .setSlots(CommandButton.SLOT_OVERFLOW).build()
+        val nextButton = CommandButton.Builder(CommandButton.ICON_NEXT)
+            .setDisplayName(getString(R.string.next))
+            .setPlayerCommand(Player.COMMAND_SEEK_TO_NEXT_MEDIA_ITEM)
+            .setSlots(CommandButton.SLOT_OVERFLOW).build()
+        return listOf(repeatButton, closeButton, previousButton, nextButton)
     }
 
     // ---- Wake lock, errors, teardown --------------------------------------------------------

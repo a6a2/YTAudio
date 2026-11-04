@@ -11,4 +11,6 @@
     <string name="repeat_off">Repeat off</string>
     <string name="repeat_all">Repeat all</string>
     <string name="repeat_one">Repeat one</string>
+    <string name="previous">Previous</string>
+    <string name="next">Next</string>
 </resources>
