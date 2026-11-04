@@ -74,6 +74,7 @@ class PlaybackService : MediaSessionService() {
     private var resting = false             // the short gap between tracks
     private var resolving = false           // looking up the next stream
     private var cardText = ""               // current text on the controls card
+    private var closing = false
 
     private val cmdClose = SessionCommand(ACTION_CLOSE, Bundle.EMPTY)
     private val cmdRepeat = SessionCommand(ACTION_REPEAT, Bundle.EMPTY)
@@ -178,21 +179,19 @@ class PlaybackService : MediaSessionService() {
     // Stay foreground during the gap/lookup between tracks so the next one can start from the background.
     override fun onUpdateNotification(session: MediaSession, startInForegroundRequired: Boolean) {
         super.onUpdateNotification(session, startInForegroundRequired || resting || resolving)
+        // Media3 may take over the foreground slot (which removes our card), so make sure the card is posted.
+        if (!closing) postControls(cardText)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_PLAY -> {
-                // Must go foreground within seconds; Media3 takes over with its own notification once audio is ready.
+                closing = false
+                // Must go foreground within seconds: the Repeat/Close card doubles as that notification.
                 ServiceCompat.startForeground(
-                    this, PLACEHOLDER_ID,
-                    NotificationCompat.Builder(this, CHANNEL)
-                        .setSmallIcon(R.drawable.ic_stat)
-                        .setContentTitle(getString(R.string.loading))
-                        .setOngoing(true).setSilent(true).build(),
+                    this, CONTROLS_ID, controlsNotification(cardText),
                     ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
                 )
-                postControls(getString(R.string.loading))
                 val link = intent.getStringExtra(EXTRA_URL)?.let(YouTubeUrl::parse)
                 if (link != null) drive(link, 1, false) else fail(R.string.err_not_youtube)
             }
@@ -204,9 +203,7 @@ class PlaybackService : MediaSessionService() {
     }
 
     /** A plain notification with Repeat and Close; some phone skins (e.g. realme UI) hide custom media buttons. */
-    @SuppressLint("MissingPermission")
-    private fun postControls(text: String) {
-        cardText = text
+    private fun controlsNotification(text: String): Notification {
         fun pi(action: String, code: Int) = PendingIntent.getService(
             this, code, Intent(this, PlaybackService::class.java).setAction(action),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
@@ -216,7 +213,7 @@ class PlaybackService : MediaSessionService() {
             Repeat.ALL -> R.drawable.ic_repeat_all to R.string.repeat_all
             Repeat.ONE -> R.drawable.ic_repeat_one to R.string.repeat_one
         }
-        val n: Notification = NotificationCompat.Builder(this, CHANNEL)
+        return NotificationCompat.Builder(this, CHANNEL)
             .setSmallIcon(R.drawable.ic_stat)
             .setContentTitle(getString(R.string.app_name))
             .setContentText(text)
@@ -224,7 +221,12 @@ class PlaybackService : MediaSessionService() {
             .addAction(icon, getString(label), pi(ACTION_REPEAT, 1))
             .addAction(R.drawable.ic_close, getString(R.string.close), pi(ACTION_CLOSE, 2))
             .build()
-        NotificationManagerCompat.from(this).notify(CONTROLS_ID, n)
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun postControls(text: String) {
+        cardText = text
+        NotificationManagerCompat.from(this).notify(CONTROLS_ID, controlsNotification(text))
     }
 
     // ---- Queue driving ----------------------------------------------------------------------
@@ -372,8 +374,9 @@ class PlaybackService : MediaSessionService() {
     }
 
     /**
-     * Android shows 3 slots in compact controls (lock screen, collapsed shade): play/pause + BACK + FORWARD.
-     * We put Repeat and Close there; Previous and Next go to the two overflow slots (expanded view).
+     * Previous / Play / Next stay in their standard positions. Repeat and Close go in the two overflow
+     * slots, which expanded players draw on the outer left and right (same place other music apps put
+     * repeat/shuffle on realme UI).
      */
     private fun layout(): List<CommandButton> {
         val (icon, label) = when (repeat) {
@@ -383,19 +386,11 @@ class PlaybackService : MediaSessionService() {
         }
         val repeatButton = CommandButton.Builder(CommandButton.ICON_UNDEFINED)
             .setDisplayName(getString(label)).setCustomIconResId(icon)
-            .setSessionCommand(cmdRepeat).setSlots(CommandButton.SLOT_BACK).build()
+            .setSessionCommand(cmdRepeat).setSlots(CommandButton.SLOT_OVERFLOW).build()
         val closeButton = CommandButton.Builder(CommandButton.ICON_UNDEFINED)
             .setDisplayName(getString(R.string.close)).setCustomIconResId(R.drawable.ic_close)
-            .setSessionCommand(cmdClose).setSlots(CommandButton.SLOT_FORWARD).build()
-        val previousButton = CommandButton.Builder(CommandButton.ICON_PREVIOUS)
-            .setDisplayName(getString(R.string.previous))
-            .setPlayerCommand(Player.COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM)
-            .setSlots(CommandButton.SLOT_OVERFLOW).build()
-        val nextButton = CommandButton.Builder(CommandButton.ICON_NEXT)
-            .setDisplayName(getString(R.string.next))
-            .setPlayerCommand(Player.COMMAND_SEEK_TO_NEXT_MEDIA_ITEM)
-            .setSlots(CommandButton.SLOT_OVERFLOW).build()
-        return listOf(repeatButton, closeButton, previousButton, nextButton)
+            .setSessionCommand(cmdClose).setSlots(CommandButton.SLOT_OVERFLOW).build()
+        return listOf(repeatButton, closeButton)
     }
 
     // ---- Wake lock, errors, teardown --------------------------------------------------------
@@ -410,6 +405,7 @@ class PlaybackService : MediaSessionService() {
     }
 
     private fun quit() {
+        closing = true
         handler.removeCallbacksAndMessages(null)
         job?.cancel()
         resting = false; resolving = false
@@ -418,7 +414,7 @@ class PlaybackService : MediaSessionService() {
         exo.clearMediaItems()
         stopForeground(STOP_FOREGROUND_REMOVE)
         NotificationManagerCompat.from(this).apply {
-            cancel(NOTIFICATION_ID); cancel(CONTROLS_ID); cancel(PLACEHOLDER_ID)
+            cancel(NOTIFICATION_ID); cancel(CONTROLS_ID)
         }
         stopSelf()
     }
@@ -444,6 +440,5 @@ class PlaybackService : MediaSessionService() {
         private const val CHANNEL = "playback"
         private const val NOTIFICATION_ID = 1001   // Media3 media notification
         private const val CONTROLS_ID = 1002        // Repeat / Close card
-        private const val PLACEHOLDER_ID = 1003     // brief "loading" foreground notification
     }
 }
