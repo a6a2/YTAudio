@@ -1,11 +1,15 @@
-# YT Audio
+# YT Audio 2.0
 
 One job: **YouTube → Share → YT Audio → audio plays in the background.** No UI, no player, no library.
 It appears only in the Share sheet (and as a media notification while playing).
 
-- Accepts `youtube.com/watch`, `youtu.be`, Shorts, Live, Music links (extra text in the share is ignored)
+- Accepts video, Shorts, Live, Music, `youtu.be` and **playlist** links (extra text in the share is ignored)
+- Playlist link → plays the whole playlist; video inside a playlist → plays the playlist from that video
+- Single video → after it ends, a recommended video plays automatically (3 s gap)
+- Notification buttons: previous / play-pause / next, repeat (off → all → one), close
 - Plays best available audio via [NewPipeExtractor](https://github.com/TeamNewPipe/NewPipeExtractor) + Media3/ExoPlayer
 - Screen-off playback, lock-screen/notification controls, Bluetooth/headphone buttons, pauses on unplug
+- ✕ Close button in the notification stops playback and removes it; paused for 10 min also auto-closes
 - Sharing another link replaces the current one; network/unavailable-video errors show a short toast
 
 ## Install

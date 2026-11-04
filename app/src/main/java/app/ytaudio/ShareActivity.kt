@@ -19,7 +19,7 @@ class ShareActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        url = intent?.getStringExtra(Intent.EXTRA_TEXT)?.let(YouTubeUrl::extract)
+        url = intent?.getStringExtra(Intent.EXTRA_TEXT)?.takeIf { YouTubeUrl.parse(it) != null }
         if (url == null) {
             Toast.makeText(this, R.string.err_not_youtube, Toast.LENGTH_SHORT).show()
             finish()
