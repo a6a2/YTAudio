@@ -1,5 +1,8 @@
 package app.ytaudio
 
+import android.annotation.SuppressLint
+import android.app.Notification
+import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
@@ -70,6 +73,7 @@ class PlaybackService : MediaSessionService() {
     private var repeat = Repeat.OFF
     private var resting = false             // the short gap between tracks
     private var resolving = false           // looking up the next stream
+    private var cardText = ""               // current text on the controls card
 
     private val cmdClose = SessionCommand(ACTION_CLOSE, Bundle.EMPTY)
     private val cmdRepeat = SessionCommand(ACTION_REPEAT, Bundle.EMPTY)
@@ -177,19 +181,50 @@ class PlaybackService : MediaSessionService() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (intent?.action == ACTION_PLAY) {
-            ServiceCompat.startForeground(
-                this, NOTIFICATION_ID,
-                NotificationCompat.Builder(this, CHANNEL)
-                    .setSmallIcon(R.drawable.ic_stat)
-                    .setContentTitle(getString(R.string.loading))
-                    .setOngoing(true).setSilent(true).build(),
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
-            )
-            val link = intent.getStringExtra(EXTRA_URL)?.let(YouTubeUrl::parse)
-            if (link != null) drive(link, 1, false) else fail(R.string.err_not_youtube)
+        when (intent?.action) {
+            ACTION_PLAY -> {
+                // Must go foreground within seconds; Media3 takes over with its own notification once audio is ready.
+                ServiceCompat.startForeground(
+                    this, PLACEHOLDER_ID,
+                    NotificationCompat.Builder(this, CHANNEL)
+                        .setSmallIcon(R.drawable.ic_stat)
+                        .setContentTitle(getString(R.string.loading))
+                        .setOngoing(true).setSilent(true).build(),
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
+                )
+                postControls(getString(R.string.loading))
+                val link = intent.getStringExtra(EXTRA_URL)?.let(YouTubeUrl::parse)
+                if (link != null) drive(link, 1, false) else fail(R.string.err_not_youtube)
+            }
+            // Taps on the controls card (works even where the system media player hides custom buttons).
+            ACTION_CLOSE -> quit()
+            ACTION_REPEAT -> cycleRepeat()
         }
         return super.onStartCommand(intent, flags, startId)
+    }
+
+    /** A plain notification with Repeat and Close; some phone skins (e.g. realme UI) hide custom media buttons. */
+    @SuppressLint("MissingPermission")
+    private fun postControls(text: String) {
+        cardText = text
+        fun pi(action: String, code: Int) = PendingIntent.getService(
+            this, code, Intent(this, PlaybackService::class.java).setAction(action),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val (icon, label) = when (repeat) {
+            Repeat.OFF -> R.drawable.ic_repeat_off to R.string.repeat_off
+            Repeat.ALL -> R.drawable.ic_repeat_all to R.string.repeat_all
+            Repeat.ONE -> R.drawable.ic_repeat_one to R.string.repeat_one
+        }
+        val n: Notification = NotificationCompat.Builder(this, CHANNEL)
+            .setSmallIcon(R.drawable.ic_stat)
+            .setContentTitle(getString(R.string.app_name))
+            .setContentText(text)
+            .setSilent(true).setOnlyAlertOnce(true)
+            .addAction(icon, getString(label), pi(ACTION_REPEAT, 1))
+            .addAction(R.drawable.ic_close, getString(R.string.close), pi(ACTION_CLOSE, 2))
+            .build()
+        NotificationManagerCompat.from(this).notify(CONTROLS_ID, n)
     }
 
     // ---- Queue driving ----------------------------------------------------------------------
@@ -220,6 +255,7 @@ class PlaybackService : MediaSessionService() {
                         exo.setMediaItem(r.item)
                         exo.prepare()
                         exo.play()
+                        postControls(r.item.mediaMetadata.title?.toString().orEmpty())
                         resolving = false
                         dropWake()
                         return@launch
@@ -332,6 +368,7 @@ class PlaybackService : MediaSessionService() {
         applyRepeat()
         getSharedPreferences("s", MODE_PRIVATE).edit().putInt("repeat", repeat.ordinal).apply()
         session?.setMediaButtonPreferences(layout())
+        postControls(cardText)
     }
 
     /**
@@ -380,7 +417,9 @@ class PlaybackService : MediaSessionService() {
         exo.stop()
         exo.clearMediaItems()
         stopForeground(STOP_FOREGROUND_REMOVE)
-        NotificationManagerCompat.from(this).cancel(NOTIFICATION_ID)
+        NotificationManagerCompat.from(this).apply {
+            cancel(NOTIFICATION_ID); cancel(CONTROLS_ID); cancel(PLACEHOLDER_ID)
+        }
         stopSelf()
     }
 
@@ -403,6 +442,8 @@ class PlaybackService : MediaSessionService() {
         private const val IDLE_MS = 10 * 60 * 1000L
         private const val TAG = "YTAudio"
         private const val CHANNEL = "playback"
-        private const val NOTIFICATION_ID = 1001
+        private const val NOTIFICATION_ID = 1001   // Media3 media notification
+        private const val CONTROLS_ID = 1002        // Repeat / Close card
+        private const val PLACEHOLDER_ID = 1003     // brief "loading" foreground notification
     }
 }

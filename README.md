@@ -1,4 +1,4 @@
-# YT Audio 2.0.1
+# YT Audio 2.0.2
 
 One job: **YouTube → Share → YT Audio → audio plays in the background.** No UI, no player, no library.
 It appears only in the Share sheet (and as a media notification while playing).
@@ -6,7 +6,8 @@ It appears only in the Share sheet (and as a media notification while playing).
 - Accepts video, Shorts, Live, Music, `youtu.be` and **playlist** links (extra text in the share is ignored)
 - Playlist link → plays the whole playlist; video inside a playlist → plays the playlist from that video
 - Single video → after it ends, a recommended video plays automatically (3 s gap)
-- Compact controls (lock screen / collapsed shade): Repeat (off → all → one) · Play/Pause · ✕ Close. Previous and Next appear when the control is expanded (and on headset buttons)
+- A small "YT Audio" card in the notification list shows the current title with Repeat and ✕ Close buttons (works on every phone skin)
+- Compact media controls (lock screen / collapsed shade): Repeat (off → all → one) · Play/Pause · ✕ Close. Previous and Next appear when the control is expanded (and on headset buttons)
 - Plays best available audio via [NewPipeExtractor](https://github.com/TeamNewPipe/NewPipeExtractor) + Media3/ExoPlayer
 - Screen-off playback, lock-screen/notification controls, Bluetooth/headphone buttons, pauses on unplug
 - ✕ Close button in the notification stops playback and removes it; paused for 10 min also auto-closes

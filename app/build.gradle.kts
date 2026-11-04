@@ -10,8 +10,8 @@ android {
         applicationId = "app.ytaudio"
         minSdk = 26
         targetSdk = 35
-        versionCode = 3
-        versionName = "2.0.1"
+        versionCode = 4
+        versionName = "2.0.2"
     }
     signingConfigs {
         // Fixed key so every build installs as an update over the previous one.
