@@ -1,7 +1,7 @@
-# YT Audio 2.2.0
+# YT Audio 2.3.0
 
 One job: **YouTube → Share → YT Audio → audio plays in the background.** No player, no library.
-It lives in the Share sheet and as a media notification while playing (opening the app from the launcher only shows a short help page).
+It lives in the Share sheet and as a media notification while playing. Opening the app shows a dark home screen with the sleep timer, speed, resume, updates and settings.
 
 - Accepts video, Shorts, Live, Music, `youtu.be` and **playlist** links (extra text in the share is ignored)
 - Playlist link → plays the whole playlist; video inside a playlist → plays the playlist from that video
@@ -11,6 +11,12 @@ It lives in the Share sheet and as a media notification while playing (opening t
 - Plays the best available **original-language** audio via [NewPipeExtractor](https://github.com/TeamNewPipe/NewPipeExtractor) + Media3/ExoPlayer (audio only, no video is downloaded)
 - Screen-off playback, lock-screen/notification controls, Bluetooth/headphone buttons, pauses on unplug
 - Survives dropped connections and expired stream links: it re-fetches the stream and resumes where it stopped
+- **Sleep timer** (15–60 min with a gentle fade-out, or end of track) and **playback speed** (0.75×–2×): tap the notification card or open the app
+- **Resume** the last session (queue and position) from the home screen or by long-pressing the launcher icon
+- **Next track is prepared in advance**, so the switch is instant; optional **data-saver** audio quality
+- **Settings:** haptics, autoplay, quality, what sharing does while playing (replace the track, the default, or add to the queue), pause between tracks, auto-close time
+- Light **haptic feedback** when playback starts and when you tap controls (can be switched off)
+- Dark, modern interface in **IBM Plex Sans Arabic**, with full Arabic (RTL) support
 - **In-app updates:** checks this project's GitHub Releases daily and installs new versions (details below)
 - ✕ Close stops playback and removes the notification; paused for 10 min also auto-closes
 - Sharing another link replaces the current one; clear error messages for network, rate-limit, bot-check and unavailable videos
@@ -76,3 +82,4 @@ Anything touching playback should be tried on a real device (screen off, Bluetoo
 ## Notes
 Personal use only; not affiliated with YouTube/Google. Using YouTube outside its official apps may conflict with its Terms of Service.
 License: GPL-3.0 (required by NewPipeExtractor, which is GPL-3.0). See [SECURITY.md](SECURITY.md).
+The interface font, IBM Plex Sans Arabic, is © IBM Corp. under the SIL Open Font License 1.1 (`third_party/IBM-Plex-OFL.txt`).

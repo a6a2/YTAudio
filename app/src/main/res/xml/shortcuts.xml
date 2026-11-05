@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="resume"
+        android:enabled="true"
+        android:shortcutShortLabel="@string/shortcut_resume"
+        android:shortcutLongLabel="@string/shortcut_resume_long">
+        <intent
+            android:action="app.ytaudio.RESUME"
+            android:targetPackage="app.ytaudio"
+            android:targetClass="app.ytaudio.MainActivity" />
+    </shortcut>
+</shortcuts>

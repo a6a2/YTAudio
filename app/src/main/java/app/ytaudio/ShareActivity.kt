@@ -41,6 +41,8 @@ class ShareActivity : ComponentActivity() {
             Intent(this, PlaybackService::class.java)
                 .setAction(PlaybackService.ACTION_PLAY)
                 .putExtra(PlaybackService.EXTRA_URL, url)
+                // Default: the new link replaces what is playing. Only the opt-in setting adds to the queue.
+                .putExtra(PlaybackService.EXTRA_ENQUEUE, Prefs.shareMode(this) == "queue")
         )
         finish()
     }

@@ -29,15 +29,18 @@ object Resolver {
         ready = true
     }
 
-    /** Blocking: call off the main thread. */
-    fun resolve(url: String): Resolved {
+    /** Blocking: call off the main thread. [saver] picks the lowest bitrate instead of the highest. */
+    fun resolve(url: String, saver: Boolean = false): Resolved {
         init()
         val info = StreamInfo.getInfo(ServiceList.YouTube, url)
         val playable = info.audioStreams
             .filter { it.deliveryMethod == DeliveryMethod.PROGRESSIVE_HTTP && !it.content.isNullOrEmpty() }
-        // Multi-language videos expose dubbed / audio-description tracks too: prefer the original one.
-        val original = playable.filter { s -> s.audioTrackType?.name.let { it == null || it == "ORIGINAL" } }
-        val audio = original.ifEmpty { playable }.maxByOrNull { it.averageBitrate }
+        // Original-language track first (multi-language videos list dubs), then best (or, in data saver, lowest) bitrate.
+        val audio = AudioPick.choose(
+            playable, bitrate = { it.averageBitrate },
+            original = { s -> s.audioTrackType?.name.let { it == null || it == "ORIGINAL" } },
+            saver = saver
+        )
 
         val builder = MediaItem.Builder()
             .setMediaId(info.id)
@@ -68,4 +71,10 @@ object Resolver {
         val p = PlaylistInfo.getMoreItems(ServiceList.YouTube, url, page)
         return p.items.map { it.url } to p.nextPage
     }
+}
+
+/** Playlist paging backed by NewPipe. */
+object NewPipeSource : PlaylistSource {
+    override fun first(url: String): Pair<List<String>, Any?> = Resolver.playlistFirst(url)
+    override fun more(url: String, page: Any): Pair<List<String>, Any?> = Resolver.playlistMore(url, page as Page)
 }
