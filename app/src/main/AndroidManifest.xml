@@ -9,9 +9,22 @@
 
     <application
         android:allowBackup="false"
-        android:icon="@drawable/ic_launcher"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher"
         android:label="@string/app_name"
+        android:supportsRtl="true"
         android:usesCleartextTraffic="false">
+
+        <!-- Optional help page. Delete this whole <activity> (or just its intent-filter) for a launcher-less app. -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:theme="@android:style/Theme.DeviceDefault.Light.NoActionBar">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
 
         <!-- Invisible share target: parses the link, starts the service, finishes. -->
         <activity
@@ -26,9 +39,11 @@
             </intent-filter>
         </activity>
 
+        <!-- Not exported: other apps can't bind to it or send it commands. The system media controls,
+             notification and headset buttons reach it through the session token / PendingIntents instead. -->
         <service
             android:name=".PlaybackService"
-            android:exported="true"
+            android:exported="false"
             android:foregroundServiceType="mediaPlayback">
             <intent-filter>
                 <action android:name="androidx.media3.session.MediaSessionService" />

@@ -24,6 +24,7 @@ import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.okhttp.OkHttpDataSource
+import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.session.CommandButton
@@ -40,11 +41,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.schabi.newpipe.extractor.Page
 import org.schabi.newpipe.extractor.exceptions.ContentNotAvailableException
 import org.schabi.newpipe.extractor.exceptions.ExtractionException
+import org.schabi.newpipe.extractor.exceptions.ReCaptchaException
 import java.io.IOException
 
 private enum class Repeat { OFF, ALL, ONE }
@@ -64,7 +68,8 @@ class PlaybackService : MediaSessionService() {
     // Queue state (guarded by `this` where touched off the main thread).
     private val queue = ArrayList<String>()
     private val seen = HashSet<String>()
-    private var index = -1
+    private var index = -1                  // where the queue cursor is (moves immediately on Next/Previous)
+    private var playingIndex = -1           // the queue entry actually loaded in the player
     private var autoplay = false            // single-video share: keep appending recommendations
     private var related: List<String> = emptyList()
     private var playlistUrl: String? = null
@@ -75,6 +80,7 @@ class PlaybackService : MediaSessionService() {
     private var resolving = false           // looking up the next stream
     private var cardText = ""               // current text on the controls card
     private var closing = false
+    private var retries = 0                 // consecutive automatic recoveries after a stream error
 
     private val cmdClose = SessionCommand(ACTION_CLOSE, Bundle.EMPTY)
     private val cmdRepeat = SessionCommand(ACTION_REPEAT, Bundle.EMPTY)
@@ -92,11 +98,19 @@ class PlaybackService : MediaSessionService() {
         wake = (getSystemService(Context.POWER_SERVICE) as PowerManager)
             .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "ytaudio:transition")
             .apply { setReferenceCounted(false) }
-        repeat = Repeat.values()[getSharedPreferences("s", MODE_PRIVATE).getInt("repeat", 0).coerceIn(0, 2)]
+        repeat = Repeat.entries[getSharedPreferences(PREFS, MODE_PRIVATE).getInt("repeat", 0).coerceIn(0, 2)]
 
         val http = OkHttpDataSource.Factory(Http.client).setUserAgent(USER_AGENT)
         exo = ExoPlayer.Builder(this)
             .setMediaSourceFactory(DefaultMediaSourceFactory(this).setDataSourceFactory(http))
+            // Bigger buffer for flaky mobile networks; the long back-buffer keeps the whole track in
+            // memory so Repeat-one restarts instantly instead of downloading it again.
+            .setLoadControl(
+                DefaultLoadControl.Builder()
+                    .setBufferDurationsMs(30_000, 120_000, 2_500, 5_000)
+                    .setBackBuffer(10 * 60_000, true)
+                    .build()
+            )
             .setAudioAttributes(
                 AudioAttributes.Builder()
                     .setUsage(C.USAGE_MEDIA).setContentType(C.AUDIO_CONTENT_TYPE_MUSIC).build(),
@@ -105,12 +119,24 @@ class PlaybackService : MediaSessionService() {
             .setHandleAudioBecomingNoisy(true)
             .setWakeMode(C.WAKE_MODE_NETWORK)
             .build()
+        // Audio only: never download video (matters for the HLS fallback on live streams).
+        exo.trackSelectionParameters = exo.trackSelectionParameters.buildUpon()
+            .setTrackTypeDisabled(C.TRACK_TYPE_VIDEO, true).build()
         applyRepeat()
         exo.addListener(object : Player.Listener {
-            override fun onPlayerError(error: PlaybackException) =
-                fail(if (error.errorCode in 2000..2999) R.string.err_network else R.string.err_generic)
+            override fun onPlayerError(error: PlaybackException) {
+                val io = error.errorCode in 2000..2999      // network / HTTP (403 = expired stream URL)
+                when {
+                    error.errorCode == PlaybackException.ERROR_CODE_BEHIND_LIVE_WINDOW -> {
+                        exo.seekToDefaultPosition(); exo.prepare()
+                    }
+                    io && retries < MAX_RETRIES -> recover()
+                    else -> fail(if (io) R.string.err_network else R.string.err_generic)
+                }
+            }
 
             override fun onPlaybackStateChanged(state: Int) {
+                if (state == Player.STATE_READY) retries = 0
                 if (state == Player.STATE_ENDED) {
                     // Rest a few seconds, then continue (see `advance`).
                     resting = true
@@ -217,7 +243,7 @@ class PlaybackService : MediaSessionService() {
             .setSmallIcon(R.drawable.ic_stat)
             .setContentTitle(getString(R.string.app_name))
             .setContentText(text)
-            .setSilent(true).setOnlyAlertOnce(true)
+            .setSilent(true).setOnlyAlertOnce(true).setOngoing(true)
             .addAction(icon, getString(label), pi(ACTION_REPEAT, 1))
             .addAction(R.drawable.ic_close, getString(R.string.close), pi(ACTION_CLOSE, 2))
             .build()
@@ -239,6 +265,8 @@ class PlaybackService : MediaSessionService() {
         handler.removeCallbacks(advance)
         handler.removeCallbacks(idleStop)
         job?.cancel()
+        Http.cancelPending()               // abort stale lookups so they can't block this one
+        retries = 0
         resting = false
         resolving = true
         holdWake()
@@ -246,45 +274,97 @@ class PlaybackService : MediaSessionService() {
             try {
                 if (link != null) withContext(Dispatchers.IO) { buildQueue(link) }
                 var cur = index
-                var tries = 0
+                var skipped = 0
                 while (true) {
                     val target = withContext(Dispatchers.IO) { step(cur, dir) }
                     if (target == null) { noTarget(dir, auto); return@launch }
+                    index = target        // move right away so quick repeated taps keep advancing
                     try {
-                        val r = withContext(Dispatchers.IO) { Resolver.resolve(synchronized(this@PlaybackService) { queue[target] }) }
-                        index = target
-                        related = r.related
-                        exo.setMediaItem(r.item)
-                        exo.prepare()
-                        exo.play()
-                        postControls(r.item.mediaMetadata.title?.toString().orEmpty())
-                        resolving = false
-                        dropWake()
+                        val r = withContext(Dispatchers.IO) { Resolver.resolve(urlAt(target)) }
+                        play(r)
                         return@launch
                     } catch (e: Exception) {
-                        // Skip dead playlist entries (up to 5 in a row); stop on network trouble.
-                        if (e is CancellationException || e is IOException || queue.size <= 1 || ++tries >= 5) throw e
+                        // Skip dead playlist entries (up to MAX_SKIPS in a row); stop on network/rate-limit trouble.
+                        if (e is CancellationException || !canSkip(e) || ++skipped >= MAX_SKIPS) throw e
                         Log.w(TAG, "skipping unplayable item", e)
                         cur = target
                     }
                 }
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: IOException) {
-                Log.e(TAG, "network", e); fail(R.string.err_network, e)
-            } catch (e: ContentNotAvailableException) {
-                Log.e(TAG, "unavailable", e); fail(R.string.err_unavailable, e)
-            } catch (e: ExtractionException) {
-                Log.e(TAG, "extraction", e); fail(R.string.err_extract, e)
             } catch (e: Exception) {
-                Log.e(TAG, "generic", e); fail(R.string.err_generic, e)
+                if (!isActive) return@launch      // superseded by a newer request: ignore its failure
+                report(e)
             }
+        }
+    }
+
+    private fun urlAt(i: Int): String = synchronized(this) { queue[i] }
+
+    private fun play(r: Resolved) {
+        playingIndex = index
+        related = r.related
+        exo.setMediaItem(r.item)
+        exo.prepare()
+        exo.play()
+        postControls(r.item.mediaMetadata.title?.toString().orEmpty())
+        resolving = false
+        dropWake()
+    }
+
+    /** Stream died mid-track (dropped connection, expired URL): look it up again and resume where it stopped. */
+    private fun recover() {
+        val url = synchronized(this) { queue.getOrNull(playingIndex) } ?: return fail(R.string.err_generic)
+        val position = if (exo.isCurrentMediaItemLive) C.TIME_UNSET else exo.currentPosition
+        val attempt = ++retries
+        handler.removeCallbacks(advance)
+        handler.removeCallbacks(idleStop)
+        job?.cancel()
+        Http.cancelPending()
+        resolving = true
+        holdWake()
+        job = scope.launch {
+            try {
+                delay(attempt * RETRY_DELAY_MS)         // 2 s, 4 s, 6 s
+                val r = withContext(Dispatchers.IO) { Resolver.resolve(url) }
+                related = r.related
+                exo.setMediaItem(r.item, position)
+                exo.prepare()
+                resolving = false
+                dropWake()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                if (!isActive) return@launch
+                if (e is IOException && retries < MAX_RETRIES) recover() else report(e)
+            }
+        }
+    }
+
+    /** Dead entries (removed/private video) are skipped; network, rate-limit and bot checks must not be. */
+    private fun canSkip(e: Exception) =
+        e !is IOException && e !is ReCaptchaException && !isBotCheck(e) && queue.size > 1
+
+    private fun isBotCheck(e: Exception) =
+        e.javaClass.simpleName.contains("NotBot", ignoreCase = true) ||
+            e.message?.contains("not a bot", ignoreCase = true) == true
+
+    private fun report(e: Exception) {
+        Log.e(TAG, "playback failed", e)
+        when {
+            e is ReCaptchaException -> fail(R.string.err_ratelimit, e)
+            e is IOException -> fail(R.string.err_network, e)
+            e is ContentNotAvailableException ->
+                fail(if (isBotCheck(e)) R.string.err_bot else R.string.err_unavailable, e)
+            e is ExtractionException -> fail(R.string.err_extract, e)
+            else -> fail(R.string.err_generic, e)
         }
     }
 
     private fun noTarget(dir: Int, auto: Boolean) {
         resolving = false
         dropWake()
+        index = playingIndex                  // nothing new was loaded: cursor goes back to what is playing
         when {
             auto || exo.playbackState == Player.STATE_ENDED -> quit()   // playlist finished
             dir < 0 -> exo.seekTo(0)
@@ -295,7 +375,7 @@ class PlaybackService : MediaSessionService() {
     @Synchronized
     private fun buildQueue(link: Link) {
         queue.clear(); seen.clear()
-        index = -1; autoplay = false; related = emptyList(); playlistUrl = null; nextPage = null
+        index = -1; playingIndex = -1; autoplay = false; related = emptyList(); playlistUrl = null; nextPage = null
         val vid = link.videoId
         val list = link.listId
         if (list != null) {
@@ -346,7 +426,8 @@ class PlaybackService : MediaSessionService() {
                 else -> null
             }
         }
-        while (cur + 1 >= queue.size && nextPage != null) if (!loadMore() && nextPage == null) break
+        var pages = 0
+        while (cur + 1 >= queue.size && nextPage != null && pages++ < MAX_PAGES) loadMore()
         if (cur + 1 < queue.size) return cur + 1
         if (repeat == Repeat.ALL && queue.isNotEmpty()) return 0
         if (autoplay) {
@@ -366,9 +447,9 @@ class PlaybackService : MediaSessionService() {
     }
 
     private fun cycleRepeat() {
-        repeat = Repeat.values()[(repeat.ordinal + 1) % 3]   // off -> all -> one -> off
+        repeat = Repeat.entries[(repeat.ordinal + 1) % 3]   // off -> all -> one -> off
         applyRepeat()
-        getSharedPreferences("s", MODE_PRIVATE).edit().putInt("repeat", repeat.ordinal).apply()
+        getSharedPreferences(PREFS, MODE_PRIVATE).edit().putInt("repeat", repeat.ordinal).apply()
         session?.setMediaButtonPreferences(layout())
         postControls(cardText)
     }
@@ -408,6 +489,7 @@ class PlaybackService : MediaSessionService() {
         closing = true
         handler.removeCallbacksAndMessages(null)
         job?.cancel()
+        Http.cancelPending()
         resting = false; resolving = false
         dropWake()
         exo.stop()
@@ -435,6 +517,11 @@ class PlaybackService : MediaSessionService() {
         const val ACTION_REPEAT = "app.ytaudio.REPEAT"
         const val EXTRA_URL = "url"
         private const val GAP_MS = 3_000L
+        private const val MAX_RETRIES = 3
+        private const val RETRY_DELAY_MS = 2_000L
+        private const val MAX_SKIPS = 5
+        private const val MAX_PAGES = 20
+        private const val PREFS = "settings"
         private const val IDLE_MS = 10 * 60 * 1000L
         private const val TAG = "YTAudio"
         private const val CHANNEL = "playback"

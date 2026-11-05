@@ -19,9 +19,12 @@ class ShareActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        url = intent?.getStringExtra(Intent.EXTRA_TEXT)?.takeIf { YouTubeUrl.parse(it) != null }
+        // Some apps send EXTRA_TEXT as a CharSequence rather than a String, so read it generically.
+        val text = intent?.getCharSequenceExtra(Intent.EXTRA_TEXT)?.toString().orEmpty()
+        url = text.takeIf { YouTubeUrl.parse(it) != null }
         if (url == null) {
-            Toast.makeText(this, R.string.err_not_youtube, Toast.LENGTH_SHORT).show()
+            val msg = if (YouTubeUrl.hasYouTubeHost(text)) R.string.err_unsupported else R.string.err_not_youtube
+            Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
             finish()
             return
         }
