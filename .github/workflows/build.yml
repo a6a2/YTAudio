@@ -84,7 +84,7 @@ jobs:
       - name: Refuse to publish an unsigned/test build
         if: needs.build.outputs.signed != 'true'
         run: echo "::error::Signing secrets are missing; not attaching a test-signed APK to the release." && exit 1
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: YTAudio-v${{ needs.build.outputs.version }}-run${{ github.run_number }}
       - uses: softprops/action-gh-release@v2
