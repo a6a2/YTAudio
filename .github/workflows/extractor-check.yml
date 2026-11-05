@@ -1,0 +1,24 @@
+name: Extractor health check
+# YouTube changes break playback often. This reads one real video through NewPipeExtractor every week
+# so you find out before your users do. A failure here usually means: bump NewPipeExtractor.
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: chmod +x gradlew   # files uploaded via the GitHub web page lose the executable bit
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 17 }
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Resolve a real video
+        env:
+          YT_SMOKE: "1"
+        run: ./gradlew testDebugUnitTest --tests 'app.ytaudio.ExtractorSmokeTest' --no-daemon
