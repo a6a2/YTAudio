@@ -87,6 +87,8 @@ class PlaybackService : MediaSessionService() {
 
     override fun onCreate() {
         super.onCreate()
+        active = true
+        UpdateCheckJob.schedule(this)      // makes sure the daily update check exists (no-op if already scheduled)
         NotificationManagerCompat.from(this).createNotificationChannel(
             NotificationChannelCompat.Builder(CHANNEL, NotificationManagerCompat.IMPORTANCE_LOW)
                 .setName(getString(R.string.channel)).build()
@@ -508,10 +510,14 @@ class PlaybackService : MediaSessionService() {
         session?.release()
         exo.release()
         session = null
+        active = false
         super.onDestroy()
     }
 
     companion object {
+        /** True while the service is alive; the updater never installs during playback. */
+        @Volatile var active = false
+
         const val ACTION_PLAY = "app.ytaudio.PLAY"
         const val ACTION_CLOSE = "app.ytaudio.CLOSE"
         const val ACTION_REPEAT = "app.ytaudio.REPEAT"

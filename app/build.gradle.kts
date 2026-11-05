@@ -18,8 +18,12 @@ android {
         applicationId = "app.ytaudio"
         minSdk = 26
         targetSdk = 35
-        versionCode = 7
-        versionName = "2.1.0"
+        versionCode = 8
+        versionName = "2.2.0"
+        // "owner/repo" whose GitHub Releases the in-app updater follows. GitHub Actions provides it automatically;
+        // for a local build pass -Pytaudio.repo=owner/repo, or leave empty to switch the updater off.
+        val updateRepo = providers.gradleProperty("ytaudio.repo").orNull ?: System.getenv("GITHUB_REPOSITORY") ?: ""
+        buildConfigField("String", "UPDATE_REPO", "\"$updateRepo\"")
     }
     signingConfigs {
         if (keystorePath != null) {
@@ -47,6 +51,7 @@ android {
         isCoreLibraryDesugaringEnabled = true
     }
     kotlinOptions { jvmTarget = "17" }
+    buildFeatures { buildConfig = true }
     lint {
         abortOnError = false
         checkReleaseBuilds = false
@@ -65,4 +70,5 @@ dependencies {
     implementation("com.github.TeamNewPipe:NewPipeExtractor:v0.26.5")
 
     testImplementation("junit:junit:4.13.2")
+    testImplementation("org.json:json:20240303")   // real org.json for JVM tests (Android's is a stub there)
 }

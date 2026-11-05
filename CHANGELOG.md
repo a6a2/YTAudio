@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.2.0
+- **In-app (over-the-air) updates** from GitHub Releases: daily background check, "Update now" button, optional automatic
+  install (Wi-Fi only, never during playback). Downloads are verified against `SHA256SUMS.txt`, must be this app with a higher
+  version, and Android enforces the signing key. Can be switched off.
+- Help page shows the update status; new notification when an update is available or needs a confirmation tap.
+- New permissions: `REQUEST_INSTALL_PACKAGES` (install the update) and `RECEIVE_BOOT_COMPLETED` (keep the daily check after reboot).
+- Unit tests for version comparison, release parsing, checksum lookup and download-URL trust.
+
 ## 2.1.0
 ### Security
 - Signing key and passwords removed from the repository; signing now comes from CI secrets / local gradle properties

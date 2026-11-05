@@ -1,4 +1,4 @@
-# YT Audio 2.1.0
+# YT Audio 2.2.0
 
 One job: **YouTube → Share → YT Audio → audio plays in the background.** No player, no library.
 It lives in the Share sheet and as a media notification while playing (opening the app from the launcher only shows a short help page).
@@ -11,6 +11,7 @@ It lives in the Share sheet and as a media notification while playing (opening t
 - Plays the best available **original-language** audio via [NewPipeExtractor](https://github.com/TeamNewPipe/NewPipeExtractor) + Media3/ExoPlayer (audio only, no video is downloaded)
 - Screen-off playback, lock-screen/notification controls, Bluetooth/headphone buttons, pauses on unplug
 - Survives dropped connections and expired stream links: it re-fetches the stream and resumes where it stopped
+- **In-app updates:** checks this project's GitHub Releases daily and installs new versions (details below)
 - ✕ Close stops playback and removes the notification; paused for 10 min also auto-closes
 - Sharing another link replaces the current one; clear error messages for network, rate-limit, bot-check and unavailable videos
 
@@ -21,6 +22,20 @@ It lives in the Share sheet and as a media notification while playing (opening t
 
 > **Upgrading from 2.0.4 or older:** the signing key changed in 2.1.0 (the old one had been published in the repository),
 > so Android will refuse to update over it. Uninstall the old version once, then install 2.1.0. Future updates install normally.
+
+## Updates (over the air)
+YT Audio updates itself from this repository's **GitHub Releases**:
+
+- Once a day it checks for a newer release. Open the app any time and tap **Check for updates** / **Update now**.
+- With **Install updates automatically** on (default), it downloads over Wi-Fi when nothing is playing and installs.
+  The first time, Android asks you to allow "install unknown apps" for YT Audio, and may ask to confirm each update.
+- Safety: the APK must come from this repo's release assets over HTTPS, match the release's `SHA256SUMS.txt`, be this app
+  with a higher version, and Android only accepts it if it is signed with the same key as the installed app.
+- Privacy: it only contacts `api.github.com` / `github.com`. Turn off **Check for updates daily** to stop all checks.
+- Release maintainers: attach the APK and `SHA256SUMS.txt` (the workflow does this) and publish a *non-pre-release* with a
+  tag higher than the current version, e.g. `v2.2.1`. Builds made by GitHub Actions follow their own repository
+  automatically; for a local build pass `-Pytaudio.repo=owner/repo` (otherwise the updater is off).
+- Updating restarts the app, which stops playback.
 
 ## Build
 Requires JDK 17 and the Android SDK 35.

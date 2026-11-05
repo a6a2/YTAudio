@@ -16,4 +16,22 @@
     <string name="help_version">Version %1$s</string>
     <string name="help_body">In the YouTube app (or browser), open a video, Short, live stream or playlist, tap Share, then choose YT Audio. The audio plays in the background with notification and lock-screen controls.\n\nThere is nothing else to set up.</string>
     <string name="help_allow_notifications">Allow notifications</string>
+    <string name="update_title">Updates</string>
+    <string name="update_checking">Checking for updates…</string>
+    <string name="update_uptodate">You’re up to date.</string>
+    <string name="update_available">Version %1$s is available.</string>
+    <string name="update_button_check">Check for updates</string>
+    <string name="update_button_install">Update now</string>
+    <string name="update_downloading">Downloading… %1$d%%</string>
+    <string name="update_installing">Installing… confirm if Android asks. The app restarts when done.</string>
+    <string name="update_failed">Update failed: %1$s</string>
+    <string name="update_check_failed">Couldn’t check for updates. Try again later.</string>
+    <string name="update_allow_install">Allow YT Audio to install apps on the next screen, then tap Update again.</string>
+    <string name="update_check_switch">Check for updates daily</string>
+    <string name="update_auto">Install updates automatically</string>
+    <string name="update_auto_hint">Updates download on Wi-Fi when nothing is playing and are checked against the release’s SHA-256. Android may still ask you to confirm. Only github.com is contacted.</string>
+    <string name="update_channel">App updates</string>
+    <string name="update_notify_title">Update available</string>
+    <string name="update_notify_text">YT Audio %1$s is ready. Tap to update.</string>
+    <string name="update_confirm_title">Tap to finish updating YT Audio</string>
 </resources>

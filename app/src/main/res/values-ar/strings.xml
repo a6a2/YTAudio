@@ -16,4 +16,22 @@
     <string name="help_version">الإصدار %1$s</string>
     <string name="help_body">في تطبيق يوتيوب (أو المتصفح) افتح فيديو أو Short أو بثاً مباشراً أو قائمة تشغيل، ثم اضغط مشاركة واختر YT Audio. يعمل الصوت في الخلفية مع أزرار التحكم في الإشعار وشاشة القفل.\n\nلا حاجة لأي إعدادات أخرى.</string>
     <string name="help_allow_notifications">السماح بالإشعارات</string>
+    <string name="update_title">التحديثات</string>
+    <string name="update_checking">جارٍ البحث عن تحديثات…</string>
+    <string name="update_uptodate">تطبيقك محدّث.</string>
+    <string name="update_available">الإصدار %1$s متاح.</string>
+    <string name="update_button_check">البحث عن تحديثات</string>
+    <string name="update_button_install">حدّث الآن</string>
+    <string name="update_downloading">جارٍ التنزيل… %1$d%%</string>
+    <string name="update_installing">جارٍ التثبيت… أكّد إذا طلب أندرويد ذلك. سيُعاد تشغيل التطبيق عند الانتهاء.</string>
+    <string name="update_failed">فشل التحديث: %1$s</string>
+    <string name="update_check_failed">تعذّر البحث عن تحديثات. حاول لاحقاً.</string>
+    <string name="update_allow_install">اسمح لـ YT Audio بتثبيت التطبيقات في الشاشة التالية، ثم اضغط «حدّث» مجدداً.</string>
+    <string name="update_check_switch">البحث عن تحديثات يومياً</string>
+    <string name="update_auto">تثبيت التحديثات تلقائياً</string>
+    <string name="update_auto_hint">تُنزَّل التحديثات عبر Wi-Fi عندما لا يكون هناك تشغيل، ويُتحقَّق منها بالبصمة SHA-256 للإصدار. قد يطلب أندرويد تأكيدك. يتم الاتصال بـ github.com فقط.</string>
+    <string name="update_channel">تحديثات التطبيق</string>
+    <string name="update_notify_title">يتوفر تحديث</string>
+    <string name="update_notify_text">YT Audio %1$s جاهز. اضغط للتحديث.</string>
+    <string name="update_confirm_title">اضغط لإنهاء تحديث YT Audio</string>
 </resources>
