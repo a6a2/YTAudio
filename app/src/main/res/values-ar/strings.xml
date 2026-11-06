@@ -76,9 +76,8 @@
     <string name="resume_text_untitled">تابع من حيث توقفت.</string>
     <string name="resume_button">استئناف التشغيل</string>
     <string name="problem_title">آخر مشكلة</string>
-    <string name="problem_copy">نسخ</string>
+    <string name="problem_share">مشاركة التقرير</string>
     <string name="problem_clear">مسح</string>
-    <string name="problem_copied">تم النسخ. الصقه في بلاغ المشكلة.</string>
     <string name="shortcut_resume">استئناف</string>
     <string name="shortcut_resume_long">استئناف آخر جلسة</string>
     <string name="about_footer">مفتوح المصدر · GPL-3.0 · الخط: IBM Plex Sans Arabic (SIL OFL)</string>

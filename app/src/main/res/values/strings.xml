@@ -76,9 +76,8 @@
     <string name="resume_text_untitled">Pick up where you left off.</string>
     <string name="resume_button">Resume playback</string>
     <string name="problem_title">Last problem</string>
-    <string name="problem_copy">Copy</string>
+    <string name="problem_share">Share report</string>
     <string name="problem_clear">Clear</string>
-    <string name="problem_copied">Copied. Paste it into your bug report.</string>
     <string name="shortcut_resume">Resume</string>
     <string name="shortcut_resume_long">Resume last session</string>
     <string name="about_footer">Open source · GPL-3.0 · Font: IBM Plex Sans Arabic (SIL OFL)</string>

@@ -2,8 +2,7 @@ package app.ytaudio
 
 import android.Manifest
 import android.app.Activity
-import android.content.ClipData
-import android.content.ClipboardManager
+import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Typeface
@@ -199,10 +198,15 @@ class MainActivity : Activity() {
         }
         problemCard.addView(problemText)
         val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        row.addView(Ui.button(this, getString(R.string.problem_copy)) {
-            val cm = getSystemService(ClipboardManager::class.java)
-            cm.setPrimaryClip(ClipData.newPlainText("YT Audio", problemText.text))
-            Toast.makeText(this, getString(R.string.problem_copied), Toast.LENGTH_SHORT).show()
+        row.addView(Ui.button(this, getString(R.string.problem_share)) {
+            // The system share sheet (it has its own "Copy" target); no clipboard access needed.
+            val send = Intent(Intent.ACTION_SEND).setType("text/plain")
+                .putExtra(Intent.EXTRA_SUBJECT, "YT Audio problem report")
+                .putExtra(Intent.EXTRA_TEXT, problemText.text.toString())
+            val chooser = Intent.createChooser(send, getString(R.string.problem_share))
+                // Don't offer our own link-sharing target for a text report.
+                .putExtra(Intent.EXTRA_EXCLUDE_COMPONENTS, arrayOf(ComponentName(this, ShareActivity::class.java)))
+            startActivity(chooser)
         }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply { marginEnd = Ui.dp(this@MainActivity, 8) })
         row.addView(Ui.button(this, getString(R.string.problem_clear), primary = false) {
             ErrorLog.clear(this); refreshProblem()
