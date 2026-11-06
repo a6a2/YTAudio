@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.3.1
+- **Fewer scary permissions.** Removed `RECEIVE_BOOT_COMPLETED`. Google Play Protect sometimes flags new sideloaded builds that
+  combine "downloader" style permissions; boot persistence was the one we didn't really need. The daily update check is simply
+  re-armed the next time you use the app (every share does this), so nothing else changes.
+- Added a Play Protect FAQ to the README.
+
 ## 2.3.0
 ### New
 - **Dark, modern home screen** in IBM Plex Sans Arabic (cards, pill buttons, adaptive dark launcher icon).

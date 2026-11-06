@@ -9,7 +9,7 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.util.Log
 
-/** Once a day (survives reboots): looks for a new release, then installs it or notifies. Never while audio is playing. */
+/** Once a day: looks for a new release, then installs it or notifies. Never while audio is playing. */
 class UpdateCheckJob : JobService() {
     private var worker: Thread? = null
 
@@ -40,7 +40,10 @@ class UpdateCheckJob : JobService() {
     companion object {
         private const val JOB_ID = 4242
 
-        /** Idempotent: call whenever the app starts. Schedules or cancels according to the user's setting. */
+        /**
+         * Idempotent: called whenever the app or the player starts. Schedules or cancels according to the user's setting.
+         * Not persisted across reboots (that would need the boot permission), so it is re-armed on next use.
+         */
         fun schedule(ctx: Context) {
             val js = ctx.getSystemService(JobScheduler::class.java)
             if (!Updater.enabled || !Updater.checkEnabled(ctx)) { js.cancel(JOB_ID); return }
@@ -49,7 +52,7 @@ class UpdateCheckJob : JobService() {
                 JobInfo.Builder(JOB_ID, ComponentName(ctx, UpdateCheckJob::class.java))
                     .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
                     .setPeriodic(24L * 60 * 60 * 1000)
-                    .setPersisted(true)
+                    .setPersisted(false)
                     .build()
             )
         }

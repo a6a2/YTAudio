@@ -1,4 +1,4 @@
-# YT Audio 2.3.0
+# YT Audio 2.3.1
 
 One job: **YouTube → Share → YT Audio → audio plays in the background.** No player, no library.
 It lives in the Share sheet and as a media notification while playing. Opening the app shows a dark home screen with the sleep timer, speed, resume, updates and settings.
@@ -74,6 +74,16 @@ keytool -genkeypair -v -keystore ytaudio-release.keystore -alias ytaudio \
   `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`. Without them, CI still builds, but the APK is signed with a throwaway
   debug key and named `…-UNSIGNED-TEST.apk`; it is never attached to a release.
 * **Back up the keystore and its passwords.** Lose them and nobody can update the app without uninstalling.
+
+## Google Play Protect says "harmful app blocked"?
+YT Audio is open source: read the code, or build it yourself. Play Protect scans every sideloaded app and its automatic
+decisions can be wrong, especially for new APKs from small projects. To install anyway, tap the small **Install anyway**
+link (not "OK"). Verify your download first: its SHA-256 must match `SHA256SUMS.txt` on the release.
+The permissions are each used for one thing: internet (YouTube and update checks), foreground service + notifications
+(playback controls), wake lock (keep playing with the screen off), vibrate (optional haptics), network state (data saver) and
+"install unknown apps" (only for the optional in-app update, which verifies a checksum and the signing key first).
+Maintainers can ask Google to review a false positive: <https://support.google.com/googleplay/android-developer/contact/protectappeals>
+(needs the APK's SHA-256).
 
 ## Contributing
 Issues and pull requests are welcome. Run `./gradlew testDebugUnitTest` before opening a PR.
