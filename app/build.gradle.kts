@@ -18,8 +18,8 @@ android {
         applicationId = "app.ytaudio"
         minSdk = 26
         targetSdk = 35
-        versionCode = 11
-        versionName = "2.3.2"
+        versionCode = 10
+        versionName = "2.3.1"
         // "owner/repo" whose GitHub Releases the in-app updater follows. GitHub Actions provides it automatically;
         // for a local build pass -Pytaudio.repo=owner/repo, or leave empty to switch the updater off.
         val updateRepo = providers.gradleProperty("ytaudio.repo").orNull ?: System.getenv("GITHUB_REPOSITORY") ?: ""

@@ -37,6 +37,10 @@ object Ui {
             if (strokeColor != null) setStroke(strokePx, strokeColor)
         }
 
+    /** The dark rounded card background, for custom containers such as the update pop-up. */
+    fun cardBackground(ctx: Context, radiusDp: Int) =
+        shape(color(ctx, R.color.surface), dp(ctx, radiusDp).toFloat(), color(ctx, R.color.stroke), dp(ctx, 1))
+
     private fun ripple(ctx: Context, base: GradientDrawable) =
         RippleDrawable(ColorStateList.valueOf(0x33FFFFFF), base, null)
 

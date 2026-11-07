@@ -1,17 +1,18 @@
 # Changelog
 
-## 2.3.2
-- The "Last problem" card now uses Android's **share sheet** instead of writing to the clipboard. Clipboard writes are also a
-  pattern used by malware, and this was the only such API in the 2.2.0 -> 2.3.x difference, so removing it may help Google Play
-  Protect's automatic scan. (Nothing else changes.)
-- Correction: earlier notes claimed `ACCESS_NETWORK_STATE` was missing in 2.2.0. It was not: the Media3 library already
-  contributes it. The explicit declaration stays, harmlessly.
-
 ## 2.3.1
-- **Fewer scary permissions.** Removed `RECEIVE_BOOT_COMPLETED`. Google Play Protect sometimes flags new sideloaded builds that
-  combine "downloader" style permissions; boot persistence was the one we didn't really need. The daily update check is simply
-  re-armed the next time you use the app (every share does this), so nothing else changes.
-- Added a Play Protect FAQ to the README.
+### Permissions
+- **Removed `ACCESS_NETWORK_STATE`.** The "data saver on mobile data" option needed it, so it is gone; "Always data saver" remains
+  (an old "mobile data" choice now counts as "Best quality"). The daily update job no longer depends on it either.
+
+### Updates
+- **Removed automatic download and install.** Nothing is installed without you tapping **Update now**, and Android still asks you to confirm.
+- **Kept the daily automatic check.**
+- The update status is now coloured: **"Latest version" in green**, **"Update available" in red**.
+- **Floating (heads-up) notification** when a new version is found, shown once per version.
+- A **pop-up in the middle of the home screen** when you open the app and a newer version exists (Update now / Later).
+- The old low-importance "updates" notification channel is replaced by a new high-importance one.
+
 
 ## 2.3.0
 ### New
@@ -23,6 +24,9 @@
 - **Settings screen:** haptics, autoplay on/off, audio quality (best / data saver on mobile data / always saver), pause between tracks (0/1/3 s), auto-close time (5 min–never), and what sharing does while playing.
 - Sharing a link while something plays **still replaces the current track** (default). "Add to the queue" is an opt-in setting.
 - **Last problem** card with a Copy button (links and tokens are stripped) for bug reports.
+
+### Fixes
+- Added the missing `ACCESS_NETWORK_STATE` permission. In 2.2.0 the *background* daily update check could fail silently on some phones (checking from the app was unaffected).
 
 ### Under the hood
 - The queue rules moved out of the service into a plain, unit-tested `QueueManager`; the main thread never waits on a playlist download.

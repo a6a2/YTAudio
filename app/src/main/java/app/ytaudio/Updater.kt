@@ -25,12 +25,13 @@ import java.security.MessageDigest
  * isn't signed with the same key as the installed app, so a tampered release can't be installed.
  */
 object Updater {
-    const val CHANNEL = "updates"
+    const val CHANNEL = "updates_alert"       // high importance, so the notification floats on screen
+    private const val OLD_CHANNEL = "updates"  // low-importance channel from 2.2.x; removed
     const val NOTIFICATION_ID = 2001
     const val CONFIRM_NOTIFICATION_ID = 2002
     const val PREFS = "settings"
     const val KEY_CHECK = "update_check"   // daily background check (default on)
-    const val KEY_AUTO = "update_auto"     // download + install without asking when possible (default on)
+    private const val KEY_NOTIFIED = "update_notified"   // last version we already announced
 
     /** True while MainActivity is on screen: then the installer's confirmation sheet may open directly. */
     @Volatile var uiVisible = false
@@ -40,7 +41,6 @@ object Updater {
 
     fun prefs(ctx: Context): SharedPreferences = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
     fun checkEnabled(ctx: Context) = prefs(ctx).getBoolean(KEY_CHECK, true)
-    fun autoEnabled(ctx: Context) = prefs(ctx).getBoolean(KEY_AUTO, true)
 
     fun canInstall(ctx: Context) = ctx.packageManager.canRequestPackageInstalls()
 
@@ -123,19 +123,15 @@ object Updater {
     }
 
     /**
-     * Hands the APK to Android's installer. With [silentIfPossible], Android 12+ may install without a prompt
-     * (it usually does once this app has installed an update before); otherwise the user confirms once.
-     * Installing restarts the app, which stops playback.
+     * Hands the APK to Android's installer. Only ever called after the user taps "Update now", and Android
+     * always asks for confirmation. Installing restarts the app, which stops playback.
      */
-    fun install(ctx: Context, apk: File, silentIfPossible: Boolean) {
+    fun install(ctx: Context, apk: File) {
         val installer = ctx.packageManager.packageInstaller
         val params = PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL)
         params.setAppPackageName(ctx.packageName)
         if (Build.VERSION.SDK_INT >= 31) {
-            params.setRequireUserAction(
-                if (silentIfPossible) PackageInstaller.SessionParams.USER_ACTION_NOT_REQUIRED
-                else PackageInstaller.SessionParams.USER_ACTION_REQUIRED
-            )
+            params.setRequireUserAction(PackageInstaller.SessionParams.USER_ACTION_REQUIRED)
         }
         val id = installer.createSession(params)
         installer.openSession(id).use { session ->
@@ -153,21 +149,37 @@ object Updater {
     }
 
     fun ensureChannel(ctx: Context) {
-        ctx.getSystemService(NotificationManager::class.java).createNotificationChannel(
-            NotificationChannel(CHANNEL, ctx.getString(R.string.update_channel), NotificationManager.IMPORTANCE_LOW)
+        val nm = ctx.getSystemService(NotificationManager::class.java)
+        nm.deleteNotificationChannel(OLD_CHANNEL)
+        nm.createNotificationChannel(
+            NotificationChannel(CHANNEL, ctx.getString(R.string.update_channel), NotificationManager.IMPORTANCE_HIGH)
         )
     }
 
+    /** Floating (heads-up) notification, shown once per new version so a daily check never nags. */
     fun notifyAvailable(ctx: Context, version: String) {
+        if (prefs(ctx).getString(KEY_NOTIFIED, null) == version) return
         ensureChannel(ctx)
         val open = PendingIntent.getActivity(
             ctx, 0, Intent(ctx, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
         val n = NotificationCompat.Builder(ctx, CHANNEL)
             .setSmallIcon(android.R.drawable.stat_sys_download_done)
+            .setColor(ctx.getColor(R.color.status_update))
             .setContentTitle(ctx.getString(R.string.update_notify_title))
             .setContentText(ctx.getString(R.string.update_notify_text, version))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_RECOMMENDATION)
             .setContentIntent(open).setAutoCancel(true).build()
-        try { ctx.getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, n) } catch (_: SecurityException) {}
+        try {
+            ctx.getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, n)
+            markAnnounced(ctx, version)
+        } catch (_: SecurityException) {}
+    }
+
+    /** The user has seen this version (pop-up in the app), so the floating notification would only repeat it. */
+    fun markAnnounced(ctx: Context, version: String) {
+        prefs(ctx).edit().putString(KEY_NOTIFIED, version).apply()
+        ctx.getSystemService(NotificationManager::class.java).cancel(NOTIFICATION_ID)
     }
 }

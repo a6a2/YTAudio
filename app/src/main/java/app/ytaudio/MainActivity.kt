@@ -2,16 +2,21 @@ package app.ytaudio
 
 import android.Manifest
 import android.app.Activity
-import android.content.ComponentName
+import android.content.ClipData
+import android.app.Dialog
+import android.content.ClipboardManager
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Color
 import android.graphics.Typeface
+import android.graphics.drawable.ColorDrawable
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.view.Gravity
 import android.view.View
+import android.view.Window
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.ProgressBar
@@ -42,11 +47,15 @@ class MainActivity : Activity() {
     private var saved: SavedSession? = null
     private var serviceWasUp: Boolean? = null
 
+    private lateinit var statusTitle: TextView        // "Latest version" (green) / "Update available" (red)
     private lateinit var status: TextView
     private lateinit var action: Button
     private lateinit var progress: ProgressBar
     private var available: UpdateInfo? = null
+    private var latest = false                        // the last check said we are up to date
     private var busy = false
+    private var dialog: Dialog? = null
+    private var dialogShown = false                   // the pop-up appears once per visit
 
     private lateinit var problemCard: LinearLayout
     private lateinit var problemText: TextView
@@ -167,6 +176,8 @@ class MainActivity : Activity() {
     private fun buildUpdates(column: LinearLayout) {
         val card = Ui.card(this, column)
         card.addView(Ui.title(this, getString(R.string.update_title)))
+        statusTitle = Ui.text(this, "", 18f, 700)
+        card.addView(statusTitle)
         status = Ui.text(this, "", 15f, muted = true)
         card.addView(status)
         progress = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
@@ -178,13 +189,9 @@ class MainActivity : Activity() {
         action = Ui.button(this, "") { onAction() }
         card.addView(action)
         Ui.space(this, card, 6)
-        Ui.switch(this, card, getString(R.string.update_check_switch), null, Updater.checkEnabled(this)) { on ->
+        Ui.switch(this, card, getString(R.string.update_check_switch), getString(R.string.update_hint), Updater.checkEnabled(this)) { on ->
             Prefs.put(this, Updater.KEY_CHECK, on)
             UpdateCheckJob.schedule(this)
-        }
-        Ui.switch(this, card, getString(R.string.update_auto), getString(R.string.update_auto_hint), Updater.autoEnabled(this)) { on ->
-            Prefs.put(this, Updater.KEY_AUTO, on)
-            if (on && !Updater.canInstall(this)) startActivity(Updater.installPermissionIntent(this))
         }
         showIdle()
     }
@@ -198,15 +205,10 @@ class MainActivity : Activity() {
         }
         problemCard.addView(problemText)
         val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        row.addView(Ui.button(this, getString(R.string.problem_share)) {
-            // The system share sheet (it has its own "Copy" target); no clipboard access needed.
-            val send = Intent(Intent.ACTION_SEND).setType("text/plain")
-                .putExtra(Intent.EXTRA_SUBJECT, "YT Audio problem report")
-                .putExtra(Intent.EXTRA_TEXT, problemText.text.toString())
-            val chooser = Intent.createChooser(send, getString(R.string.problem_share))
-                // Don't offer our own link-sharing target for a text report.
-                .putExtra(Intent.EXTRA_EXCLUDE_COMPONENTS, arrayOf(ComponentName(this, ShareActivity::class.java)))
-            startActivity(chooser)
+        row.addView(Ui.button(this, getString(R.string.problem_copy)) {
+            val cm = getSystemService(ClipboardManager::class.java)
+            cm.setPrimaryClip(ClipData.newPlainText("YT Audio", problemText.text))
+            Toast.makeText(this, getString(R.string.problem_copied), Toast.LENGTH_SHORT).show()
         }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply { marginEnd = Ui.dp(this@MainActivity, 8) })
         row.addView(Ui.button(this, getString(R.string.problem_clear), primary = false) {
             ErrorLog.clear(this); refreshProblem()
@@ -219,7 +221,10 @@ class MainActivity : Activity() {
     override fun onStart() {
         super.onStart()
         Updater.uiVisible = true
-        if (Updater.enabled && available == null && !busy) checkNow()
+        if (Updater.enabled) {
+            val known = available
+            if (known != null) showUpdateDialog(known) else if (!busy) checkNow()
+        }
     }
 
     override fun onResume() {
@@ -236,6 +241,8 @@ class MainActivity : Activity() {
 
     override fun onStop() {
         Updater.uiVisible = false
+        dialog?.dismiss()
+        dialog = null
         super.onStop()
     }
 
@@ -281,12 +288,70 @@ class MainActivity : Activity() {
         progress.visibility = View.GONE
         action.isEnabled = true
         val info = available
-        if (info != null) {
-            status.text = getString(R.string.update_available, info.version)
-            action.text = getString(R.string.update_button_install)
-        } else {
-            action.text = getString(R.string.update_button_check)
+        when {
+            info != null -> {
+                showStatusTitle(R.string.update_available_title, R.color.status_update)           // red
+                status.text = getString(R.string.update_available_detail, info.version)
+                action.text = getString(R.string.update_button_install)
+            }
+            latest -> {
+                showStatusTitle(R.string.update_latest_title, R.color.status_ok)                  // green
+                status.text = getString(R.string.update_latest_detail, BuildConfig.VERSION_NAME)
+                action.text = getString(R.string.update_button_check)
+            }
+            else -> {
+                statusTitle.visibility = View.GONE
+                status.text = ""
+                action.text = getString(R.string.update_button_check)
+            }
         }
+    }
+
+    private fun showStatusTitle(text: Int, color: Int) {
+        statusTitle.visibility = View.VISIBLE
+        statusTitle.text = getString(text)
+        statusTitle.setTextColor(getColor(color))
+    }
+
+    /** Floating card in the middle of the screen, once per visit, when a newer version exists. */
+    private fun showUpdateDialog(info: UpdateInfo) {
+        if (dialogShown || !Updater.uiVisible || isFinishing || isDestroyed) return
+        dialogShown = true
+        Updater.markAnnounced(this, info.version)          // seen: the floating notification would only repeat it
+
+        val box = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            val p = Ui.dp(this@MainActivity, 22)
+            setPadding(p, p, p, p)
+            background = Ui.cardBackground(this@MainActivity, 26)
+        }
+        box.addView(Ui.text(this, getString(R.string.update_available_title), 22f, 700)
+            .apply { setTextColor(getColor(R.color.status_update)) })
+        box.addView(Ui.text(this, getString(R.string.update_popup_text, info.version, BuildConfig.VERSION_NAME), 15f, muted = true)
+            .apply { setPadding(0, Ui.dp(this@MainActivity, 6), 0, 0) })
+        val notes = info.notes.trim().take(280)
+        if (notes.isNotEmpty()) {
+            box.addView(Ui.text(this, notes, 13f, muted = true).apply {
+                maxLines = 6
+                ellipsize = android.text.TextUtils.TruncateAt.END
+                setPadding(0, Ui.dp(this@MainActivity, 12), 0, 0)
+            })
+        }
+        val d = Dialog(this)
+        box.addView(Ui.button(this, getString(R.string.update_button_install)) { d.dismiss(); installNow(info) })
+        box.addView(Ui.button(this, getString(R.string.update_later), primary = false) { d.dismiss() })
+        d.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        d.setContentView(box)
+        d.window?.apply {
+            setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+            setGravity(Gravity.CENTER)
+            setDimAmount(0.65f)
+            setLayout((resources.displayMetrics.widthPixels * 0.88f).toInt(), android.view.ViewGroup.LayoutParams.WRAP_CONTENT)
+        }
+        d.setOnDismissListener { if (dialog === d) dialog = null }
+        dialog = d
+        d.show()
+        Haptics.start(this)
     }
 
     private fun onAction() {
@@ -297,6 +362,7 @@ class MainActivity : Activity() {
 
     private fun checkNow() {
         busy = true
+        statusTitle.visibility = View.GONE
         status.text = getString(R.string.update_checking)
         action.isEnabled = false
         Thread {
@@ -305,8 +371,9 @@ class MainActivity : Activity() {
                 if (isDestroyed) return@runOnUiThread
                 result.onSuccess { info ->
                     available = info
+                    latest = info == null
                     showIdle()
-                    if (info == null) status.text = getString(R.string.update_uptodate)
+                    if (info != null) showUpdateDialog(info)
                 }.onFailure {
                     ErrorLog.record(this, "Update check failed", it); refreshProblem()
                     showIdle(); status.text = getString(R.string.update_check_failed)
@@ -332,7 +399,7 @@ class MainActivity : Activity() {
                     runOnUiThread { progress.progress = pct; status.text = getString(R.string.update_downloading, pct) }
                 }
                 runOnUiThread { status.text = getString(R.string.update_installing) }
-                Updater.install(this, apk, silentIfPossible = false)
+                Updater.install(this, apk)
                 runOnUiThread { busy = false; action.isEnabled = true; progress.visibility = View.GONE }
             } catch (e: Exception) {
                 runOnUiThread {

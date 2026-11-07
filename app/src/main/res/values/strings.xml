@@ -17,8 +17,6 @@
     <string name="help_allow_notifications">Allow notifications</string>
     <string name="update_title">Updates</string>
     <string name="update_checking">Checking for updates…</string>
-    <string name="update_uptodate">You’re up to date.</string>
-    <string name="update_available">Version %1$s is available.</string>
     <string name="update_button_check">Check for updates</string>
     <string name="update_button_install">Update now</string>
     <string name="update_downloading">Downloading… %1$d%%</string>
@@ -27,8 +25,6 @@
     <string name="update_check_failed">Couldn’t check for updates. Try again later.</string>
     <string name="update_allow_install">Allow YT Audio to install apps on the next screen, then tap Update again.</string>
     <string name="update_check_switch">Check for updates daily</string>
-    <string name="update_auto">Install updates automatically</string>
-    <string name="update_auto_hint">Updates download on Wi-Fi when nothing is playing and are checked against the release’s SHA-256. Android may still ask you to confirm. Only github.com is contacted.</string>
     <string name="update_channel">App updates</string>
     <string name="update_notify_title">Update available</string>
     <string name="update_notify_text">YT Audio %1$s is ready. Tap to update.</string>
@@ -46,7 +42,6 @@
     <string name="set_autoplay_hint">After a single video ends, play a recommended one.</string>
     <string name="set_quality">Audio quality</string>
     <string name="q_best">Best quality</string>
-    <string name="q_auto">Data saver on mobile data</string>
     <string name="q_saver">Always data saver</string>
     <string name="set_share">Sharing a link while something plays</string>
     <string name="share_replace">Play it now (replaces the current track)</string>
@@ -76,9 +71,17 @@
     <string name="resume_text_untitled">Pick up where you left off.</string>
     <string name="resume_button">Resume playback</string>
     <string name="problem_title">Last problem</string>
-    <string name="problem_share">Share report</string>
+    <string name="problem_copy">Copy</string>
     <string name="problem_clear">Clear</string>
+    <string name="problem_copied">Copied. Paste it into your bug report.</string>
     <string name="shortcut_resume">Resume</string>
     <string name="shortcut_resume_long">Resume last session</string>
     <string name="about_footer">Open source · GPL-3.0 · Font: IBM Plex Sans Arabic (SIL OFL)</string>
+    <string name="update_latest_title">Latest version</string>
+    <string name="update_latest_detail">You’re on version %1$s.</string>
+    <string name="update_available_title">Update available</string>
+    <string name="update_available_detail">Version %1$s is ready to install.</string>
+    <string name="update_popup_text">Version %1$s is ready. You have %2$s.</string>
+    <string name="update_later">Later</string>
+    <string name="update_hint">Checks GitHub once a day. Only github.com is contacted. Nothing is installed without your tap.</string>
 </resources>

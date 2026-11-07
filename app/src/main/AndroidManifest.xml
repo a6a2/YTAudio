@@ -8,10 +8,9 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <!-- Light haptic ticks (taps, playback start). -->
     <uses-permission android:name="android.permission.VIBRATE" />
-    <!-- Lets the updater and the "data saver on mobile data" option tell Wi-Fi from mobile data. -->
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <!-- In-app updates: install the downloaded APK (verified against the release checksum first). -->
+    <!-- In-app updates: install the downloaded APK, and keep the daily update check after a reboot. -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
         android:allowBackup="false"

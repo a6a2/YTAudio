@@ -6,7 +6,6 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
-import android.net.ConnectivityManager
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -491,14 +490,8 @@ class PlaybackService : MediaSessionService() {
         }
     }
 
-    /** Data saver: always, or only on mobile data ("auto"). */
-    private fun useSaver(): Boolean = when (Prefs.quality(this)) {
-        "saver" -> true
-        "auto" -> try {
-            getSystemService(ConnectivityManager::class.java).isActiveNetworkMetered
-        } catch (e: SecurityException) { false }
-        else -> false
-    }
+    /** Data saver: pick the lowest-bitrate audio stream. */
+    private fun useSaver(): Boolean = Prefs.quality(this) == "saver"
 
     // ---- Repeat -----------------------------------------------------------------------------
 

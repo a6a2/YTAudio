@@ -31,7 +31,7 @@ class SettingsActivity : Activity() {
         }
 
         group(column, R.string.set_quality, listOf(
-            "best" to R.string.q_best, "auto" to R.string.q_auto, "saver" to R.string.q_saver
+            "best" to R.string.q_best, "saver" to R.string.q_saver
         ), Prefs.quality(this)) { Prefs.put(this, "quality", it) }
 
         group(column, R.string.set_share, listOf(

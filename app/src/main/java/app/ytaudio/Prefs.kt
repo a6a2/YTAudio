@@ -12,8 +12,8 @@ object Prefs {
     fun haptics(ctx: Context) = sp(ctx).getBoolean("haptics", true)
     /** A single video continues with a recommended one. */
     fun autoplay(ctx: Context) = sp(ctx).getBoolean("autoplay", true)
-    /** "best", "auto" (data saver only on mobile data) or "saver". */
-    fun quality(ctx: Context) = sp(ctx).getString("quality", "best") ?: "best"
+    /** "best" or "saver". (An older "auto" setting counts as "best".) */
+    fun quality(ctx: Context) = if (sp(ctx).getString("quality", "best") == "saver") "saver" else "best"
     /** What sharing a link does while something plays: "replace" (default) or "queue". */
     fun shareMode(ctx: Context) = sp(ctx).getString("share_mode", "replace") ?: "replace"
     /** Pause between tracks, in seconds. */

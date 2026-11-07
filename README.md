@@ -1,4 +1,4 @@
-# YT Audio 2.3.2
+# YT Audio 2.3.1
 
 One job: **YouTube → Share → YT Audio → audio plays in the background.** No player, no library.
 It lives in the Share sheet and as a media notification while playing. Opening the app shows a dark home screen with the sleep timer, speed, resume, updates and settings.
@@ -13,7 +13,7 @@ It lives in the Share sheet and as a media notification while playing. Opening t
 - Survives dropped connections and expired stream links: it re-fetches the stream and resumes where it stopped
 - **Sleep timer** (15–60 min with a gentle fade-out, or end of track) and **playback speed** (0.75×–2×): tap the notification card or open the app
 - **Resume** the last session (queue and position) from the home screen or by long-pressing the launcher icon
-- **Next track is prepared in advance**, so the switch is instant; optional **data-saver** audio quality
+- **Next track is prepared in advance**, so the switch is instant; optional **data-saver** audio quality (lowest bitrate)
 - **Settings:** haptics, autoplay, quality, what sharing does while playing (replace the track, the default, or add to the queue), pause between tracks, auto-close time
 - Light **haptic feedback** when playback starts and when you tap controls (can be switched off)
 - Dark, modern interface in **IBM Plex Sans Arabic**, with full Arabic (RTL) support
@@ -30,17 +30,18 @@ It lives in the Share sheet and as a media notification while playing. Opening t
 > so Android will refuse to update over it. Uninstall the old version once, then install 2.1.0. Future updates install normally.
 
 ## Updates (over the air)
-YT Audio updates itself from this repository's **GitHub Releases**:
+YT Audio checks this repository's **GitHub Releases** for a newer version. **It never installs anything by itself.**
 
-- Once a day it checks for a newer release. Open the app any time and tap **Check for updates** / **Update now**.
-- With **Install updates automatically** on (default), it downloads over Wi-Fi when nothing is playing and installs.
-  The first time, Android asks you to allow "install unknown apps" for YT Audio, and may ask to confirm each update.
-- Safety: the APK must come from this repo's release assets over HTTPS, match the release's `SHA256SUMS.txt`, be this app
-  with a higher version, and Android only accepts it if it is signed with the same key as the installed app.
+- Once a day it checks in the background. When a new version appears you get a **floating notification** (once per version).
+- Opening the app shows **"Latest version"** in green, or **"Update available"** in red with a pop-up in the middle of the screen.
+- **Update now** downloads the APK, verifies it, and hands it to Android's installer, which asks you to confirm.
+  The first time, Android asks you to allow "install unknown apps" for YT Audio.
+- Safety: the APK must come from this repo's release assets over HTTPS, match the release's `SHA256SUMS.txt`, be this app with a higher version,
+  and Android only accepts it if it is signed with the same key as the installed app.
 - Privacy: it only contacts `api.github.com` / `github.com`. Turn off **Check for updates daily** to stop all checks.
-- Release maintainers: attach the APK and `SHA256SUMS.txt` (the workflow does this) and publish a *non-pre-release* with a
-  tag higher than the current version, e.g. `v2.2.1`. Builds made by GitHub Actions follow their own repository
-  automatically; for a local build pass `-Pytaudio.repo=owner/repo` (otherwise the updater is off).
+- Release maintainers: attach the APK and `SHA256SUMS.txt` (the workflow does this) and publish a *non-pre-release* with a tag higher than the
+  current version, e.g. `v2.3.2`. Builds made by GitHub Actions follow their own repository automatically; for a local build pass
+  `-Pytaudio.repo=owner/repo` (otherwise the updater is off).
 - Updating restarts the app, which stops playback.
 
 ## Build
@@ -74,16 +75,6 @@ keytool -genkeypair -v -keystore ytaudio-release.keystore -alias ytaudio \
   `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`. Without them, CI still builds, but the APK is signed with a throwaway
   debug key and named `…-UNSIGNED-TEST.apk`; it is never attached to a release.
 * **Back up the keystore and its passwords.** Lose them and nobody can update the app without uninstalling.
-
-## Google Play Protect says "harmful app blocked"?
-YT Audio is open source: read the code, or build it yourself. Play Protect scans every sideloaded app and its automatic
-decisions can be wrong, especially for new APKs from small projects. To install anyway, tap the small **Install anyway**
-link (not "OK"). Verify your download first: its SHA-256 must match `SHA256SUMS.txt` on the release.
-The permissions are each used for one thing: internet (YouTube and update checks), foreground service + notifications
-(playback controls), wake lock (keep playing with the screen off), vibrate (optional haptics), network state (data saver) and
-"install unknown apps" (only for the optional in-app update, which verifies a checksum and the signing key first).
-Maintainers can ask Google to review a false positive: <https://support.google.com/googleplay/android-developer/contact/protectappeals>
-(needs the APK's SHA-256).
 
 ## Contributing
 Issues and pull requests are welcome. Run `./gradlew testDebugUnitTest` before opening a PR.

@@ -17,8 +17,6 @@
     <string name="help_allow_notifications">السماح بالإشعارات</string>
     <string name="update_title">التحديثات</string>
     <string name="update_checking">جارٍ البحث عن تحديثات…</string>
-    <string name="update_uptodate">تطبيقك محدّث.</string>
-    <string name="update_available">الإصدار %1$s متاح.</string>
     <string name="update_button_check">البحث عن تحديثات</string>
     <string name="update_button_install">حدّث الآن</string>
     <string name="update_downloading">جارٍ التنزيل… %1$d%%</string>
@@ -27,8 +25,6 @@
     <string name="update_check_failed">تعذّر البحث عن تحديثات. حاول لاحقاً.</string>
     <string name="update_allow_install">اسمح لـ YT Audio بتثبيت التطبيقات في الشاشة التالية، ثم اضغط «حدّث» مجدداً.</string>
     <string name="update_check_switch">البحث عن تحديثات يومياً</string>
-    <string name="update_auto">تثبيت التحديثات تلقائياً</string>
-    <string name="update_auto_hint">تُنزَّل التحديثات عبر Wi-Fi عندما لا يكون هناك تشغيل، ويُتحقَّق منها بالبصمة SHA-256 للإصدار. قد يطلب أندرويد تأكيدك. يتم الاتصال بـ github.com فقط.</string>
     <string name="update_channel">تحديثات التطبيق</string>
     <string name="update_notify_title">يتوفر تحديث</string>
     <string name="update_notify_text">YT Audio %1$s جاهز. اضغط للتحديث.</string>
@@ -46,7 +42,6 @@
     <string name="set_autoplay_hint">بعد انتهاء فيديو واحد، يُشغَّل فيديو مقترح.</string>
     <string name="set_quality">جودة الصوت</string>
     <string name="q_best">أفضل جودة</string>
-    <string name="q_auto">توفير البيانات عند استخدام بيانات الجوال</string>
     <string name="q_saver">توفير البيانات دائماً</string>
     <string name="set_share">عند مشاركة رابط أثناء التشغيل</string>
     <string name="share_replace">تشغيله الآن (يستبدل المقطع الحالي)</string>
@@ -76,9 +71,17 @@
     <string name="resume_text_untitled">تابع من حيث توقفت.</string>
     <string name="resume_button">استئناف التشغيل</string>
     <string name="problem_title">آخر مشكلة</string>
-    <string name="problem_share">مشاركة التقرير</string>
+    <string name="problem_copy">نسخ</string>
     <string name="problem_clear">مسح</string>
+    <string name="problem_copied">تم النسخ. الصقه في بلاغ المشكلة.</string>
     <string name="shortcut_resume">استئناف</string>
     <string name="shortcut_resume_long">استئناف آخر جلسة</string>
     <string name="about_footer">مفتوح المصدر · GPL-3.0 · الخط: IBM Plex Sans Arabic (SIL OFL)</string>
+    <string name="update_latest_title">أحدث إصدار</string>
+    <string name="update_latest_detail">أنت تستخدم الإصدار %1$s.</string>
+    <string name="update_available_title">يتوفر تحديث</string>
+    <string name="update_available_detail">الإصدار %1$s جاهز للتثبيت.</string>
+    <string name="update_popup_text">الإصدار %1$s جاهز. لديك الإصدار %2$s.</string>
+    <string name="update_later">لاحقاً</string>
+    <string name="update_hint">يتم البحث في GitHub مرة يومياً. يتم الاتصال بـ github.com فقط. لا يُثبَّت شيء بدون ضغطتك.</string>
 </resources>

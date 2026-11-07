@@ -6,17 +6,31 @@ import android.app.job.JobScheduler
 import android.app.job.JobService
 import android.content.ComponentName
 import android.content.Context
-import android.net.ConnectivityManager
 import android.util.Log
+import java.io.IOException
 
-/** Once a day: looks for a new release, then installs it or notifies. Never while audio is playing. */
+/**
+ * Once a day (survives reboots): looks for a new release and, if there is one, floats a notification.
+ * It never downloads or installs anything: updating always starts from the user tapping "Update now".
+ */
 class UpdateCheckJob : JobService() {
     private var worker: Thread? = null
 
     override fun onStartJob(params: JobParameters): Boolean {
         worker = Thread {
-            try { run() } catch (e: Exception) { Log.w("YTAudio", "update check failed", e) }
-            finally { jobFinished(params, false) }
+            var retry = false
+            try {
+                if (Updater.enabled && Updater.checkEnabled(this)) {
+                    Updater.check()?.let { Updater.notifyAvailable(this, it.version) }
+                }
+            } catch (e: IOException) {
+                Log.w("YTAudio", "update check: no connection or GitHub unreachable", e)
+                retry = true            // try again shortly (the system backs off), e.g. phone was offline
+            } catch (e: Exception) {
+                Log.w("YTAudio", "update check failed", e)
+            } finally {
+                jobFinished(params, retry)
+            }
         }.also { it.start() }
         return true
     }
@@ -26,35 +40,24 @@ class UpdateCheckJob : JobService() {
         return true      // try again later
     }
 
-    private fun run() {
-        if (!Updater.enabled || !Updater.checkEnabled(this)) return
-        val info = Updater.check() ?: return
-        val metered = getSystemService(ConnectivityManager::class.java).isActiveNetworkMetered
-        val canAuto = Updater.autoEnabled(this) && Updater.canInstall(this) && !PlaybackService.active && !metered
-        if (!canAuto) { Updater.notifyAvailable(this, info.version); return }
-        val apk = Updater.download(this, info)
-        if (PlaybackService.active) { Updater.notifyAvailable(this, info.version); return }   // music started meanwhile
-        Updater.install(this, apk, silentIfPossible = true)
-    }
-
     companion object {
         private const val JOB_ID = 4242
 
-        /**
-         * Idempotent: called whenever the app or the player starts. Schedules or cancels according to the user's setting.
-         * Not persisted across reboots (that would need the boot permission), so it is re-armed on next use.
-         */
+        /** Idempotent: call whenever the app starts. Schedules or cancels according to the user's setting. */
         fun schedule(ctx: Context) {
-            val js = ctx.getSystemService(JobScheduler::class.java)
-            if (!Updater.enabled || !Updater.checkEnabled(ctx)) { js.cancel(JOB_ID); return }
-            if (js.getPendingJob(JOB_ID) != null) return
-            js.schedule(
-                JobInfo.Builder(JOB_ID, ComponentName(ctx, UpdateCheckJob::class.java))
-                    .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
-                    .setPeriodic(24L * 60 * 60 * 1000)
-                    .setPersisted(false)
-                    .build()
-            )
+            try {
+                val js = ctx.getSystemService(JobScheduler::class.java)
+                if (!Updater.enabled || !Updater.checkEnabled(ctx)) { js.cancel(JOB_ID); return }
+                if (js.getPendingJob(JOB_ID) != null) return
+                js.schedule(
+                    JobInfo.Builder(JOB_ID, ComponentName(ctx, UpdateCheckJob::class.java))
+                        .setPeriodic(24L * 60 * 60 * 1000)
+                        .setPersisted(true)
+                        .build()
+                )
+            } catch (e: Exception) {
+                Log.w("YTAudio", "could not schedule the update check", e)    // never let this break the app
+            }
         }
     }
 }
