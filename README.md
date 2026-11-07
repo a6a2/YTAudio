@@ -1,4 +1,4 @@
-# YT Audio 2.3.1
+# YT Audio 2.3.2
 
 One job: **YouTube → Share → YT Audio → audio plays in the background.** No player, no library.
 It lives in the Share sheet and as a media notification while playing. Opening the app shows a dark home screen with the sleep timer, speed, resume, updates and settings.

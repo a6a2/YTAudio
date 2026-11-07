@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.3.2
+### Fixes
+- **Android 12 and older: playback controls were missing.** These versions draw the notification's own buttons instead of
+  reading the media session (Android 13+ does that), and the controls card only had Repeat and Close. On Android 12 and older
+  the card now also has **Previous, Play/Pause and Next** (and shows on the lock screen). Android 13+ is unchanged.
+
+### Under the hood
+- Added the `androidx.media:media` dependency (MediaStyle for the card) and four small icons.
+
 ## 2.3.1
 ### Permissions
 - **Removed `ACCESS_NETWORK_STATE`.** The "data saver on mobile data" option needed it, so it is gone; "Always data saver" remains
