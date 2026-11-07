@@ -9,6 +9,10 @@
     <string name="err_extract">تعذّر قراءة الفيديو من يوتيوب. قد يحتاج التطبيق إلى تحديث.</string>
     <string name="err_ratelimit">يوتيوب يقيّد الطلبات أو يطلب التحقق. حاول مجدداً بعد بضع دقائق.</string>
     <string name="err_bot">يطلب يوتيوب التأكد من أنك لست روبوتاً. حاول لاحقاً أو من شبكة أخرى.</string>
+    <string name="act_play">تشغيل</string>
+    <string name="act_pause">إيقاف مؤقت</string>
+    <string name="act_prev">السابق</string>
+    <string name="act_next">التالي</string>
     <string name="close">إغلاق</string>
     <string name="repeat_off">التكرار متوقف</string>
     <string name="repeat_all">تكرار الكل</string>

@@ -9,6 +9,10 @@
     <string name="err_extract">Couldn’t read this video from YouTube. The app may need an update.</string>
     <string name="err_ratelimit">YouTube is limiting requests or asking for verification. Try again in a few minutes.</string>
     <string name="err_bot">YouTube wants to confirm you’re not a bot. Try again later or on another network.</string>
+    <string name="act_play">Play</string>
+    <string name="act_pause">Pause</string>
+    <string name="act_prev">Previous</string>
+    <string name="act_next">Next</string>
     <string name="close">Close</string>
     <string name="repeat_off">Repeat off</string>
     <string name="repeat_all">Repeat all</string>

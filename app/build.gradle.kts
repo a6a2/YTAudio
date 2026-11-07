@@ -64,6 +64,7 @@ dependencies {
     implementation("androidx.media3:media3-exoplayer:1.8.0")
     implementation("androidx.media3:media3-session:1.8.0")
     implementation("androidx.media3:media3-datasource-okhttp:1.8.0")
+    implementation("androidx.media:media:1.7.0")   // MediaStyle for the controls card on Android 12 and older
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
     // YouTube stream extraction. Bump to the latest tag when YouTube changes break playback.

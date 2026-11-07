@@ -6,6 +6,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -18,6 +19,7 @@ import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.ServiceCompat
+import androidx.media.app.NotificationCompat.MediaStyle
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.ForwardingPlayer
@@ -264,6 +266,14 @@ class PlaybackService : MediaSessionService() {
             // Taps on the controls card (works even where the system media player hides custom buttons).
             ACTION_CLOSE -> { Haptics.click(this); quit() }
             ACTION_REPEAT -> { Haptics.click(this); cycleRepeat() }
+            // Previous / play-pause / next buttons on the card (Android 12 and older, see controlsNotification).
+            ACTION_TOGGLE -> {
+                Haptics.click(this)
+                if (exo.playWhenReady) exo.pause() else exo.play()
+                postControls(cardText)
+            }
+            ACTION_NEXT -> { Haptics.click(this); drive(null, 1, false) }
+            ACTION_PREV -> { Haptics.click(this); previous() }
         }
         return super.onStartCommand(intent, flags, startId)
     }
@@ -276,7 +286,7 @@ class PlaybackService : MediaSessionService() {
         )
     }
 
-    /** A plain notification with Repeat and Close; some phone skins (e.g. realme UI) hide custom media buttons. */
+    /** Controls card: Repeat and Close everywhere (some skins, e.g. realme UI, hide custom media buttons); plus Previous / Play-Pause / Next on Android 12 and older. */
     private fun controlsNotification(text: String): Notification {
         fun pi(action: String, code: Int) = PendingIntent.getService(
             this, code, Intent(this, PlaybackService::class.java).setAction(action),
@@ -291,12 +301,26 @@ class PlaybackService : MediaSessionService() {
         val open = PendingIntent.getActivity(
             this, 3, Intent(this, MainActivity::class.java), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        return NotificationCompat.Builder(this, CHANNEL)
+        val b = NotificationCompat.Builder(this, CHANNEL)
             .setSmallIcon(R.drawable.ic_stat)
             .setContentTitle(getString(R.string.app_name))
             .setContentText(text)
             .setContentIntent(open)
             .setSilent(true).setOnlyAlertOnce(true).setOngoing(true)
+        if (Build.VERSION.SDK_INT < 33) {
+            // Android 12 and older draw the notification's own buttons; they do not read the controls from the
+            // media session the way Android 13+ does. So the card carries Previous / Play-Pause / Next itself.
+            val playing = exo.playWhenReady
+            b.addAction(R.drawable.ic_prev, getString(R.string.act_prev), pi(ACTION_PREV, 4))
+            b.addAction(
+                if (playing) R.drawable.ic_pause else R.drawable.ic_play,
+                getString(if (playing) R.string.act_pause else R.string.act_play), pi(ACTION_TOGGLE, 5)
+            )
+            b.addAction(R.drawable.ic_next, getString(R.string.act_next), pi(ACTION_NEXT, 6))
+            b.setStyle(MediaStyle().setShowActionsInCompactView(0, 1, 2))
+            b.setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+        }
+        return b
             .addAction(icon, getString(label), pi(ACTION_REPEAT, 1))
             .addAction(R.drawable.ic_close, getString(R.string.close), pi(ACTION_CLOSE, 2))
             .build()
@@ -623,6 +647,9 @@ class PlaybackService : MediaSessionService() {
         const val ACTION_RESUME = "app.ytaudio.RESUME"
         const val ACTION_CLOSE = "app.ytaudio.CLOSE"
         const val ACTION_REPEAT = "app.ytaudio.REPEAT"
+        const val ACTION_TOGGLE = "app.ytaudio.TOGGLE"
+        const val ACTION_NEXT = "app.ytaudio.NEXT"
+        const val ACTION_PREV = "app.ytaudio.PREV"
         const val EXTRA_URL = "url"
         const val EXTRA_ENQUEUE = "enqueue"
         const val SLEEP_OFF = -1L
